@@ -1,0 +1,37 @@
+Set DefaultBaseFrequency=50  ! for European system
+New circuit.LVTest
+Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500
+New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.398] kVAs=[100 100] XHL=5 ppm=100 %Rs="0.5,0.5" tap=1.000
+!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.398] r=1.27159 x=5.01089 kVAs=[100 100]
+
+New XYCurve.R_Freq npts=30 Xarray=(50,100,150,200,250,300,350,400,450,500,550,650,750,850,950,1050,1150,1250,1350,1450,1550,1650,1750,1850,1950,2050,2150,2250,2350,2450) Yarray=(1.0,1.4,1.7,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.3,3.6,3.9,4.1,4.4,4.6,4.8,5.0,5.2,5.4,5.6,5.7,5.9,6.1,6.2,6.4,6.6,6.7,6.9,7.0)
+New XYCurve.L_Freq npts=4 Xarray=(50,350,400,2500) Yarray=(1,1,0.5,0.5)
+
+New Reactor.R1 Bus1=1 Bus2=2 R=0.0102 X=0.0291 Phases=3 !LCurve=L_Freq RCurve=R_Freq
+
+Redirect LineCode.txt
+
+Redirect Lines_R.txt
+
+New "Spectrum.Van_CC" NumHarm=50 CSVFile=SpectrumVan_CC.csv
+New "Spectrum.Leaf_CC" NumHarm=50 CSVFile=SpectrumLeaf_CC.csv
+New "Spectrum.BMW_1ph_CC" NumHarm=50 CSVFile=SpectrumBMW_1ph_CC.csv
+New "Spectrum.Zoe_1ph_CC" NumHarm=50 CSVFile=SpectrumZoe_1ph_CC.csv
+New "Spectrum.Kona_CC" NumHarm=50 CSVFile=SpectrumKona_CC.csv
+New "Spectrum.Zoe_3ph_CC" NumHarm=50 CSVFile=SpectrumZoe_3ph_CC.csv
+
+New "Spectrum.Van_CV" NumHarm=50 CSVFile=SpectrumVan_CV.csv
+New "Spectrum.Leaf_CV" NumHarm=50 CSVFile=SpectrumLeaf_CV.csv
+New "Spectrum.BMW_1ph_CV" NumHarm=50 CSVFile=SpectrumBMW_1ph_CV.csv
+New "Spectrum.Zoe_1ph_CV" NumHarm=50 CSVFile=SpectrumZoe_1ph_CV.csv
+New "Spectrum.Kona_CV" NumHarm=50 CSVFile=SpectrumKona_CV.csv
+!New "Spectrum.Zoe_3ph_CV" NumHarm=50 CSVFile=SpectrumZoe_3ph_CV.csv
+
+Redirect Loads_R.txt
+
+New monitor.M1 Reactor.R1 Terminal=2
+!New monitor.M1 Transformer.TR1 Terminal=2
+
+Set voltagebases=[11 .398]
+Calcvoltagebases
+LatLongCoords XY_Position.csv
