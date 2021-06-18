@@ -1,1 +1,1 @@
-New Load.LOAD1 Phases=1 Bus1=2.1 kV=0.230 kW=22.17 PF=1 Spectrum=Zoe_3ph_CC
+New Load.LOAD1 Phases=1 Bus1=2.1 kV=0.230 kW=7.2 PF=1 spectrum=Kona_CC
