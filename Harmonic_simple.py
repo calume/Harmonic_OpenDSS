@@ -25,7 +25,8 @@ DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads;
 
 cm='cc'
-rated_cc=pd.read_excel('rated_'+cm+'_stats.xlsx', sheet_name=None)
+if cm=='cc':
+    rated_cc=pd.read_excel('rated_cc_stats.xlsx', sheet_name=None)
 
 if cm=='de':
     rated_cc=pd.read_excel('derated_stats.xlsx', sheet_name=None)

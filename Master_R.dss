@@ -1,6 +1,6 @@
 Set DefaultBaseFrequency=50  ! for European system
 New circuit.LVTest
-Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=10000 ISC1=12500
+Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500
 New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.398] kVAs=[100 100] XHL=5 ppm=100 %Rs="0.5,0.5" tap=1.000
 !New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.398] r=1.27159 x=5.01089 kVAs=[100 100]
 
@@ -26,6 +26,31 @@ New "Spectrum.BMW_1ph_CV" NumHarm=50 CSVFile=SpectrumBMW_1ph_CV.csv
 New "Spectrum.Zoe_1ph_CV" NumHarm=50 CSVFile=SpectrumZoe_1ph_CV.csv
 New "Spectrum.Kona_CV" NumHarm=50 CSVFile=SpectrumKona_CV.csv
 !New "Spectrum.Zoe_3ph_CV" NumHarm=50 CSVFile=SpectrumZoe_3ph_CV.csv
+
+New "Spectrum.leaf_6A" NumHarm=50 CSVFile=Spectrumleaf_6A.csv
+New "Spectrum.leaf_12A" NumHarm=50 CSVFile=Spectrumleaf_12A.csv
+New "Spectrum.leaf_18A" NumHarm=50 CSVFile=Spectrumleaf_18A.csv
+New "Spectrum.leaf_24A" NumHarm=50 CSVFile=Spectrumleaf_24A.csv
+
+New "Spectrum.kona_6A" NumHarm=50 CSVFile=Spectrumkona_6A.csv
+New "Spectrum.kona_12A" NumHarm=50 CSVFile=Spectrumkona_12A.csv
+New "Spectrum.kona_18A" NumHarm=50 CSVFile=Spectrumkona_18A.csv
+New "Spectrum.kona_24A" NumHarm=50 CSVFile=Spectrumkona_24A.csv
+
+New "Spectrum.van_6A" NumHarm=50 CSVFile=Spectrumvan_6A.csv
+New "Spectrum.van_12A" NumHarm=50 CSVFile=Spectrumvan_12A.csv
+New "Spectrum.van_18A" NumHarm=50 CSVFile=Spectrumvan_18A.csv
+New "Spectrum.van_24A" NumHarm=50 CSVFile=Spectrumvan_24A.csv
+
+New "Spectrum.bmw_1ph_6A" NumHarm=50 CSVFile=Spectrumbmw_1ph_6A.csv
+New "Spectrum.bmw_1ph_12A" NumHarm=50 CSVFile=Spectrumbmw_1ph_12A.csv
+New "Spectrum.bmw_1ph_18A" NumHarm=50 CSVFile=Spectrumbmw_1ph_18A.csv
+New "Spectrum.bmw_1ph_24A" NumHarm=50 CSVFile=Spectrumbmw_1ph_24A.csv
+
+New "Spectrum.zoe_1ph_6A" NumHarm=50 CSVFile=Spectrumzoe_1ph_6A.csv
+New "Spectrum.zoe_1ph_12A" NumHarm=50 CSVFile=Spectrumzoe_1ph_12A.csv
+New "Spectrum.zoe_1ph_18A" NumHarm=50 CSVFile=Spectrumzoe_1ph_18A.csv
+New "Spectrum.zoe_1ph_24A" NumHarm=50 CSVFile=Spectrumzoe_1ph_24A.csv
 
 Redirect Loads_R.txt
 
