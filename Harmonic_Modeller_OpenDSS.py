@@ -16,48 +16,41 @@ import random
 import cmath
 import math
 import matplotlib.pyplot as plt
-
+import pickle
+from matplotlib.ticker import (MultipleLocator,
+                               FormatStrFormatter,
+                               AutoMinorLocator)
 ##### Load in the Harmonic Profiles ########
 #derated
 #rated_cv
-
+case='CC_ALlSinglePhase'
 cm='de'
-##rated_cc=pd.read_excel('rated_'+cm+'_stats.xlsx', sheet_name=None)
-
-if cm=='de':
-    rated_cc=pd.read_excel('derated_stats.xlsx', sheet_name=None)
-
-if cm=='cv':
-    del rated_cc['BMW_3ph_CV']
-    del rated_cc['Zoe_3ph_CV']
-    del rated_cc['DC_CV']
-
-if cm=='cc':
-    del rated_cc['BMW_3ph_CC']
-    del rated_cc['Zoe_3ph_CC']
-    del rated_cc['DC_CC']
 g55lims=pd.read_csv('g55limits.csv')
 
+if cm=='CV' or cm=='CC':
+    rated_cc=pd.read_excel('rated_'+str(cm)+'_stats.xlsx', sheet_name=None)
+    del rated_cc['BMW_3ph_'+str(cm)]
+    del rated_cc['Zoe_3ph_'+str(cm)]
+    del rated_cc['DC_'+str(cm)]
+    EV_power=pd.Series(index=rated_cc.keys(),data=[6.6,6.6,7.2,7.2,7.2])
+    
 if cm=='de':
+    rated_cc=pd.read_excel('derated_stats.xlsx', sheet_name=None)
     del rated_cc['bmw_3ph_6A']
     del rated_cc['bmw_3ph_9A']
     del rated_cc['bmw_3ph_12A']
     del rated_cc['bmw_3ph_15A']
-  
     del rated_cc['zoe_3ph_6A']
     del rated_cc['zoe_3ph_12A']
     del rated_cc['zoe_3ph_18A']
     del rated_cc['zoe_3ph_24A']
-    
-g55lims=pd.read_csv('g55limits.csv')
-
-if cm=='cv' or cm=='cc':
-    EV_power=pd.Series(index=rated_cc.keys(),data=[6.6,6.6,7.2,7.2,7.2])
-    
-if cm=='de':
     EV_power=pd.Series(index=rated_cc.keys(),data=[1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52])
-
-g55lims=pd.read_csv('g55limits.csv')
+    
+    # ###--- Code to only include <12A charging
+    # for i in list(rated_cc.keys()):
+    #     if i[-2:] =='4A' or i[-2:] =='8A':
+    #         del rated_cc[i]
+    #         del EV_power[i]
 
 ########---------- Get rid of ZOE and BMW--------
 # del rated_cc['Zoe_1ph_CC']
@@ -74,11 +67,17 @@ DSSLoads=DSSCircuit.Loads;
 
 ###### Source Impedence is adjusted for Urban/Rural networks
 
-M=20  ##--Number of EVs
+M=30  ##--Number of EVs
 B=20 ##--Number of Buses
-R=200##--Number of Runs
-f_Rsc=pd.Series(dtype=float,index=[15,33,66],data=[2.3,0.85,0.2]) #for 300mm
-#f_Rsc=pd.Series(dtype=float,index=[15,33,66],data=[1.5,0.62,0.17]) #for 185 mm
+R=100##--Number of Runs
+
+RSCs=['WPD_Zmax',15,33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+##RSCs=[15,33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
+
+#f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
+f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
+
+
 
 ####------Build Lines between B buses
 def lineBuilder(B,f_Rsc):
@@ -233,7 +232,7 @@ def harmonic_modeller(M,B,i):
 
             
     Vh_percent['h'][0]='THD'
-    return All_Pass,Vh_percent,Pass,THD_Pass,All_THDs,Full_H_pass
+    return All_Pass,Vh_percent,Pass,THD_Pass,All_THDs,Full_H_pass,failers
     #print(i,All_Pass)
 
 def balanced_run():
@@ -247,7 +246,7 @@ def balanced_run():
     for i in list(rated_cc.keys()):
         AllPass[i],AllVh_percent[i],Pass[i],THD_Pass[i]=harmonic_modeller(M,B,i)
 
-    for f in [15,33,66]:
+    for f in RSCs:
         lineBuilder(B,f_Rsc[f])
         VoltageMin[f]={}
         V_Min_Av[f]=pd.DataFrame(columns=rated_cc.keys())
@@ -273,77 +272,102 @@ i='dummy'
 Unbalanced={}
 Unbalanced_fullH={}
 perH={}
-for f in [15,33,66]:
+failers={}
+for f in RSCs:
     print(f)
     lineBuilder(B,f_Rsc[f])
-    Unbalanced['AllPass'+str(f)],Unbalanced['AllVh_percent'+str(f)],Unbalanced['Pass'+str(f)],Unbalanced['THD_Pass'+str(f)],Unbalanced['All_THDs'+str(f)],Unbalanced_fullH[f]=harmonic_modeller(M,B,'dummy')
+    Unbalanced['AllPass_'+str(f)],Unbalanced['AllVh_percent_'+str(f)],Unbalanced['Pass_'+str(f)],Unbalanced['THD_Pass_'+str(f)],Unbalanced['All_THDs_'+str(f)],Unbalanced_fullH[f],failers[f]=harmonic_modeller(M,B,'dummy')
     
-    perH[f]=pd.DataFrame(index=Unbalanced_fullH[15][1].index,columns=Unbalanced_fullH[15].keys())
-    perH[f]['h']=Unbalanced['Pass15']['h'][Unbalanced_fullH[15][1].index]
-    for j in Unbalanced_fullH[15].keys():
+    perH[f]=pd.DataFrame(index=Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]][1].index,columns=Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]].keys())
+    perH[f]['h']=Unbalanced['Pass_'+str(f)]['h'][Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]][1].index]
+    for j in Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]].keys():
         perH[f][j]=1-Unbalanced_fullH[f][j].sum(axis=1)/Unbalanced_fullH[f][j].count(axis=1)
 
-# V_Min_Av=pd.DataFrame(columns=[15,33])
-# for f in [15,33,66]:
-#     lineBuilder(B,f_Rsc[f])
-#     VoltageMin[f]=pd.DataFrame(index=range(1,M+1))
-#     for r in range(1,R):
-#         VoltageMin[f][r]=range(1,M+1)
-#         for n in range(1,M+1):
-#             load_builder_unbalanced(n,i)
-#             currents, powers, voltages, VoltageMin[f][r][n] =export_loadflow()
+V_Min_Av=pd.DataFrame(columns=RSCs)
+seqz={}
+faults={}
+for f in RSCs:
+    lineBuilder(B,f_Rsc[f])
+    VoltageMin[f]=pd.DataFrame(index=range(1,M+1))
+    for r in range(1,R):
+        VoltageMin[f][r]=range(1,M+1)
+        for n in range(1,M+1):
+            load_builder_unbalanced(n,i)
+            currents, powers, voltages, VoltageMin[f][r][n] =export_loadflow()
             
-#     V_Min_Av[f]=VoltageMin[f].mean(axis=1).values
-#     V_Min_Av.index=range(1,M+1)
+    V_Min_Av[f]=VoltageMin[f].mean(axis=1).values
+    V_Min_Av.index=range(1,M+1)
                 
-#     seqz,faults=fault_seqz()
-#     print(faults)
+    seqz[f],faults[f]=fault_seqz()
+    print(faults)
     
 
+allfails=[]
+for f in RSCs:
+    allfails.append(failers[f])
+allfails=np.unique(np.concatenate(allfails))
 #i=random.choice(list(rated_cc.keys()))
 
-styles=pd.Series(data=[':','-.','-'],index=[15,33,66])
+styles=pd.Series(data=[':','-.','-','--'],index=RSCs)
 
 fig, (ax1, ax2) = plt.subplots(2, sharex=False)
-for f in [15,33,66]:
-    ax1.plot(100-(Unbalanced['AllPass'+str(f)].sum(axis=1)/Unbalanced['AllPass'+str(f)].count(axis=1))*100,label='RSC'+str(f),linestyle=styles[f])
-    ax2.plot(Unbalanced['All_THDs'+str(f)].index,Unbalanced['All_THDs'+str(f)].max(axis=1), label='RSC'+str(f),linestyle=styles[f])
+for f in RSCs:
+    ax1.plot(100-(Unbalanced['AllPass_'+str(f)].sum(axis=1)/Unbalanced['AllPass_'+str(f)].count(axis=1))*100,label='RSC'+str(f),linestyle=styles[f])
+    ax2.plot(Unbalanced['All_THDs_'+str(f)].index,Unbalanced['All_THDs_'+str(f)].max(axis=1), label='RSC'+str(f),linestyle=styles[f])
+    ax1.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
+    ax2.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
 
 ax1.set_ylabel('% Probability of Failure')
 ax1.legend()
+ax1.grid(linewidth=0.2)
+ax1.set_xlim(1,M)
+ax1.set_ylim(0,100)
 ax2.set_ylabel('Maximum THD')
 ax2.legend()
 ax2.set_xlabel('Number of EVs')
+ax2.grid(linewidth=0.2)
+ax2.set_xlim(1,M)
+ax2.set_ylim(0,5)
+print('Max prob of THD Failure', (100-((Unbalanced['THD_Pass_'+str(f)]==True).sum(axis=1)/Unbalanced['THD_Pass_'+str(f)].count(axis=1))*100).max())
+plt.tight_layout()
 
-print('Max prob of THD Failure', (100-((Unbalanced['THD_Pass'+str(f)]==True).sum(axis=1)/Unbalanced['THD_Pass'+str(f)].count(axis=1))*100).max())
-
-
-plt.figure('Specific Harmonics')
+#plt.figure('Specific Harmonics',figsize=(5, 8))
 c=1
-for pl in perH[f].index:
+for pl in allfails:
     ax=plt.subplot(len(perH[f].index),1, c)
-    ax.set_ylabel('% Failure Probability')
-    ax.text(.05,.8,'h='+str(int(perH[f]['h'][pl])),
+    ax.set_ylabel('% Failure')
+    ax.text(.5,.8,'h='+str(int(perH[f]['h'][pl])),
         horizontalalignment='left',
         transform=ax.transAxes)
-    for f in [15,33,66]:
-        if c<len(perH[f]):
-            ax.plot(perH[f].loc[pl][1:M]*100,linestyle=styles[f])
-        if c==len(perH[f]):
-           ax.plot(perH[f].loc[pl][1:M]*100, label='RSC='+str(f),linestyle=styles[f])
-    c=c+1
+    for f in RSCs:
+        if len(perH[f])>0:
+            print(len(perH[f]))
+            if c<len(perH[f]):
+                ax.plot(perH[f].loc[pl][1:M]*100,linestyle=styles[f])
+            if c==len(perH[f]):
+               ax.plot(perH[f].loc[pl][1:M]*100, label='RSC='+str(f),linestyle=styles[f])
+        c=c+1
     if c>len(perH[f]):
         ax.legend()
-ax.set_xlabel('Number of EVs')
+    ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
+    plt.grid(linewidth=0.2)
+    ax.set_xlim(1,M)
+    ax.set_ylim(0,100)
+    ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
+    plt.tight_layout()
 
-# fig, (ax1, ax2) = plt.subplots(2, sharex=True)
+pickle_out = open('results/Unbalanced_'+case+'.pickle', "wb")
+pickle.dump(Unbalanced, pickle_out)
+pickle_out.close()
 
-# for f in [15,33,66]:
-#     ax1.plot(Unbalanced['All_THDs'+str(f)].index,Unbalanced['All_THDs'+str(f)].max(axis=1), label='RSC'+str(f))
-# #    ax2.plot(V_Min_Av.index, V_Min_Av[f].values, linestyle="--", label='Vmin with Rsc='+str(f), linewidth=1)
-# ax1.set_ylabel('Maximum THD')
-# #ax2.set_ylabel('Voltage (V)')
-# #ax2.plot([1,M],[216,216],color='Black',linestyle=":", linewidth=0.5, label='Statutory Min')
-# ax1.set_xlabel('Number of EVs')
-# ax1.legend()
-# #ax2.legend()
+pickle_out = open('results/AllHarmonics_'+case+'.pickle', "wb")
+pickle.dump(perH, pickle_out)
+pickle_out.close()
+
+plt.figure()
+for f in RSCs:
+    plt.plot(V_Min_Av.index, V_Min_Av[f].values, linestyle=styles[f], label='Vmin with Rsc='+str(f), linewidth=1)
+plt.ylabel('Voltage (V)')
+plt.plot([1,M],[216,216],color='Black',linestyle=":", linewidth=0.5, label='Statutory Min')
+plt.xlabel('Number of EVs')
+plt.legend()
