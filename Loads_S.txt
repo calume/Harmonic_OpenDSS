@@ -1,0 +1,4 @@
+New Load.LOAD1 Phases=1 Bus1=2.1 kV=0.230 kW=5.52 PF=1 spectrum=kona_24A
+New Load.LOAD2 Phases=1 Bus1=2.1 kV=0.230 kW=5.52 PF=1 spectrum=kona_24A
+New Load.LOAD3 Phases=1 Bus1=2.1 kV=0.230 kW=5.52 PF=1 spectrum=kona_24A
+New Load.LOAD4 Phases=1 Bus1=2.1 kV=0.230 kW=5.52 PF=1 spectrum=kona_24A

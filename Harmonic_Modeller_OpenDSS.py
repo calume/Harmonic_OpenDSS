@@ -23,8 +23,8 @@ from matplotlib.ticker import (MultipleLocator,
 ##### Load in the Harmonic Profiles ########
 #derated
 #rated_cv
-case='CC_ALlSinglePhase'
-cm='de'
+case='CC_Unbalanced_Urban'
+cm='CC'
 g55lims=pd.read_csv('g55limits.csv')
 
 if cm=='CV' or cm=='CC':
@@ -67,7 +67,7 @@ DSSLoads=DSSCircuit.Loads;
 
 ###### Source Impedence is adjusted for Urban/Rural networks
 
-M=30  ##--Number of EVs
+M=40  ##--Number of EVs
 B=20 ##--Number of Buses
 R=100##--Number of Runs
 
@@ -290,6 +290,7 @@ for f in RSCs:
     lineBuilder(B,f_Rsc[f])
     VoltageMin[f]=pd.DataFrame(index=range(1,M+1))
     for r in range(1,R):
+        print('Vmin Run ', r)
         VoltageMin[f][r]=range(1,M+1)
         for n in range(1,M+1):
             load_builder_unbalanced(n,i)
@@ -307,6 +308,19 @@ for f in RSCs:
     allfails.append(failers[f])
 allfails=np.unique(np.concatenate(allfails))
 #i=random.choice(list(rated_cc.keys()))
+
+pickle_out = open('results/Summary_'+case+'.pickle', "wb")
+pickle.dump(Unbalanced, pickle_out)
+pickle_out.close()
+
+pickle_out = open('results/AllHarmonics_'+case+'.pickle', "wb")
+pickle.dump(perH, pickle_out)
+pickle_out.close()
+
+pickle_out = open('results/Vmin_'+case+'.pickle', "wb")
+pickle.dump(perH, pickle_out)
+pickle_out.close()
+
 
 styles=pd.Series(data=[':','-.','-','--'],index=RSCs)
 
@@ -331,10 +345,10 @@ ax2.set_ylim(0,5)
 print('Max prob of THD Failure', (100-((Unbalanced['THD_Pass_'+str(f)]==True).sum(axis=1)/Unbalanced['THD_Pass_'+str(f)].count(axis=1))*100).max())
 plt.tight_layout()
 
-#plt.figure('Specific Harmonics',figsize=(5, 8))
+plt.figure('Specific Harmonics',figsize=(5, 8))
 c=1
 for pl in allfails:
-    ax=plt.subplot(len(perH[f].index),1, c)
+    ax=plt.subplot(len(allfails),1, c)
     ax.set_ylabel('% Failure')
     ax.text(.5,.8,'h='+str(int(perH[f]['h'][pl])),
         horizontalalignment='left',
@@ -346,8 +360,8 @@ for pl in allfails:
                 ax.plot(perH[f].loc[pl][1:M]*100,linestyle=styles[f])
             if c==len(perH[f]):
                ax.plot(perH[f].loc[pl][1:M]*100, label='RSC='+str(f),linestyle=styles[f])
-        c=c+1
-    if c>len(perH[f]):
+            c=c+1
+    if c>len(allfails):
         ax.legend()
     ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
     plt.grid(linewidth=0.2)
@@ -356,13 +370,6 @@ for pl in allfails:
     ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
     plt.tight_layout()
 
-pickle_out = open('results/Unbalanced_'+case+'.pickle', "wb")
-pickle.dump(Unbalanced, pickle_out)
-pickle_out.close()
-
-pickle_out = open('results/AllHarmonics_'+case+'.pickle', "wb")
-pickle.dump(perH, pickle_out)
-pickle_out.close()
 
 plt.figure()
 for f in RSCs:
@@ -371,3 +378,4 @@ plt.ylabel('Voltage (V)')
 plt.plot([1,M],[216,216],color='Black',linestyle=":", linewidth=0.5, label='Statutory Min')
 plt.xlabel('Number of EVs')
 plt.legend()
+
