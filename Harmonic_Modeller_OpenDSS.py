@@ -9,8 +9,6 @@ import win32com.client
 import scipy.io
 import numpy as np
 import pandas as pd
-import opendssdirect as dss
-from opendssdirect.utils import run_command
 import csv
 import random
 import cmath
@@ -23,8 +21,8 @@ from matplotlib.ticker import (MultipleLocator,
 ##### Load in the Harmonic Profiles ########
 #derated
 #rated_cv
-case='CC_Unbalanced_Urban'
-cm='CC'
+case='Test'
+cm='de'
 g55lims=pd.read_csv('g55limits.csv')
 
 if cm=='CV' or cm=='CC':
@@ -63,21 +61,20 @@ if cm=='de':
 dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
 dssText = dssObj.Text
 DSSCircuit = dssObj.ActiveCircuit
-DSSLoads=DSSCircuit.Loads;
+DSSLoads=DSSCircuit.Loads
+DSSElement=DSSCircuit.ActiveElement
 
 ###### Source Impedence is adjusted for Urban/Rural networks
 
 M=40  ##--Number of EVs
-B=20 ##--Number of Buses
-R=100##--Number of Runs
+B=30 ##--Number of Buses
+R=4##--Number of Runs
 
-RSCs=['WPD_Zmax',15,33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
-##RSCs=[15,33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
+#RSCs=['WPD_Zmax',15,33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+RSCs=[15,33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
 
-#f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
-f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
-
-
+f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
+#f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
 
 ####------Build Lines between B buses
 def lineBuilder(B,f_Rsc):
@@ -108,7 +105,7 @@ def create_spectrum(rated_cc):
 
 def export_loadflow():
     dssObj.ClearAll() 
-    dssText.Command="Compile E:/PNDC/TN-006Harmonic/Harmonic_OpenDSS/Master_R.dss"
+    dssText.Command="Compile Master_R.dss"
     dssText.Command="Solve"
 
 
@@ -162,11 +159,10 @@ def load_builder_balanced(n,i):
 def load_builder_unbalanced(n,i):
     Loads=pd.read_csv('Loads.txt', delimiter=' ', names=['New','Load','Phases','Bus1','kV','kW','PF','spectrum'])
     i=random.choice(list(rated_cc.keys()))
-    admd_factor=1
-    if n>=20:
-        n=int(n/2)
+    # if n>=20:
+    #     n=int(n/2)
     Loads['spectrum'][0]='spectrum='+str(i)
-    Loads['kW'][0]='kW='+str(EV_power[i]*admd_factor)
+    Loads['kW'][0]='kW='+str(EV_power[i])
     b0=random.choice(range(2,B+1))
     Loads['Bus1'][0]='Bus1='+str(b0)+'.1'
     for k in range(1,n):
@@ -176,64 +172,56 @@ def load_builder_unbalanced(n,i):
         Loads=Loads.append(Loads.loc[0], ignore_index=True)
         Loads['Bus1'][k]='Bus1='+str(b)+'.'+str(p)
         Loads['Load'][k]='Load.LOAD'+str(k+1)
-        Loads['kW'][k]='kW='+str(EV_power[i]*admd_factor)
+        Loads['kW'][k]='kW='+str(EV_power[i])
         Loads['spectrum'][k]='spectrum='+str(i)
     
     Loads.to_csv('Loads_R.txt', sep=" ", index=False, header=False)
 
 def harmonic_modeller(M,B,i):
     Ch_Ratios=pd.DataFrame()
-    Vh_percent=pd.DataFrame()
-    Pass=pd.DataFrame()
-    THD_Pass=pd.DataFrame()
-    All_Pass=pd.DataFrame(index=range(1,M+1))    
-    All_THDs=pd.DataFrame(index=range(1,M+1))
-    Full_H_pass={}
-    failers=[]    
-    for r in range(1,R):
+    THD_Pass=np.zeros(shape=(R,M),dtype=bool)
+    All_Pass=np.zeros(shape=(R,M),dtype=bool)
+    All_THDs=np.zeros(shape=(R,M),dtype=float)
+    VoltageMin=np.zeros(shape=(R,M),dtype=float)  
+    Pass={} 
+    for r in range(1,R+1):
         print('Run',r)
-        All_Pass[r]=range(1,M+1)
-        All_THDs[r]=range(1,M+1)
         for n in range(1,M+1):
+            Vh_ratios=pd.DataFrame()
             if r==1:
-                Full_H_pass[n]=pd.DataFrame()
+                Pass[n]=np.zeros(shape=(30,R),dtype=bool)
             ###--- Add loads
             load_builder_unbalanced(n,i)
+            
             dssObj.ClearAll() 
-            dssText.Command="Compile E:/PNDC/TN-006Harmonic/Harmonic_OpenDSS/Master_R.dss"
+            dssText.Command="Compile Master_R.dss"
             dssText.Command="Solve"
+            bvs = list(DSSCircuit.AllBusVMag)
+            Voltages = bvs[0::3], bvs[1::3], bvs[2::3]
+            VoltArray = np.zeros((len(Voltages[0]), 3))
+            for i in range(0, 3):
+                VoltArray[:, i] = np.array(Voltages[i], dtype=float)
+            VoltageMin[(r-1),(n-1)]=VoltArray[-1:].mean()
+
+             ###--- Solve Harmonics
             dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
             dssText.Command="export monitors m1"
             res_Reactor=pd.read_csv('LVTest_Mon_m1_1.csv')
-            Vh_ratios=pd.DataFrame()
             Vh_ratios['h']=res_Reactor[' Harmonic']
             Vh_ratios['V']=res_Reactor[' V1']
             Vh_ratios['V_ratio']=res_Reactor[' V1']/res_Reactor[' V1'][0]*100
             Vh_ratios['Lims']=g55lims['L']
             Ch_Ratios['h']=res_Reactor[' Harmonic']
             Ch_Ratios[n]=res_Reactor[' I1']/res_Reactor[' I1'][0]*100
-            Vh_percent['h']=res_Reactor[' Harmonic']
-            Vh_percent[n]=Vh_ratios['V_ratio']
-            Vh_percent[n][0] = sum(Vh_ratios['V_ratio'][1:]**2)**0.5
-            Pass['h']=res_Reactor[' Harmonic']
-            Pass[n]=Vh_percent[n]<Vh_ratios['Lims']
-            Full_H_pass[n][r]=Pass[n]
-            
-        All_Pass[r]=Pass.iloc[:,1:].sum()==30
-        All_THDs[r]=Vh_percent.iloc[0][1:]
-        THD_Pass[r]=Pass.iloc[0][1:]
+            Vh_ratios['V_ratio'][0] = sum(Vh_ratios['V_ratio'][1:]**2)**0.5
+            Pass[n][:,(r-1)]=Vh_ratios['V_ratio']<Vh_ratios['Lims']
+            All_THDs[(r-1),(n-1)]=Vh_ratios['V_ratio'].iloc[0]
     for n in range(1,M+1):
-        failers.append((Full_H_pass[n].sum(axis=1)).index[Full_H_pass[n].sum(axis=1)<r].values)
-    failers=np.unique(np.concatenate(failers))
-    
-    for n in range(1,M+1):
-        Full_H_pass[n]=Full_H_pass[n].loc[failers]
-        
-
-            
-    Vh_percent['h'][0]='THD'
-    return All_Pass,Vh_percent,Pass,THD_Pass,All_THDs,Full_H_pass,failers
-    #print(i,All_Pass)
+        All_Pass[:,n-1]=Pass[n].sum(axis=0)==30
+        THD_Pass[:,n-1]=Pass[n][0,:]
+    harmonic_index=res_Reactor[' Harmonic'].astype(int)
+    return All_Pass,Pass,THD_Pass,All_THDs,harmonic_index,VoltageMin
+        #print(i,All_Pass)
 
 def balanced_run():
     AllPass={}
@@ -272,41 +260,28 @@ i='dummy'
 Unbalanced={}
 Unbalanced_fullH={}
 perH={}
-failers={}
-for f in RSCs:
-    print(f)
-    lineBuilder(B,f_Rsc[f])
-    Unbalanced['AllPass_'+str(f)],Unbalanced['AllVh_percent_'+str(f)],Unbalanced['Pass_'+str(f)],Unbalanced['THD_Pass_'+str(f)],Unbalanced['All_THDs_'+str(f)],Unbalanced_fullH[f],failers[f]=harmonic_modeller(M,B,'dummy')
-    
-    perH[f]=pd.DataFrame(index=Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]][1].index,columns=Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]].keys())
-    perH[f]['h']=Unbalanced['Pass_'+str(f)]['h'][Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]][1].index]
-    for j in Unbalanced_fullH[list(Unbalanced_fullH.keys())[0]].keys():
-        perH[f][j]=1-Unbalanced_fullH[f][j].sum(axis=1)/Unbalanced_fullH[f][j].count(axis=1)
-
-V_Min_Av=pd.DataFrame(columns=RSCs)
+allfails=[]
+AllH={}
 seqz={}
 faults={}
 for f in RSCs:
+    print(f)
     lineBuilder(B,f_Rsc[f])
-    VoltageMin[f]=pd.DataFrame(index=range(1,M+1))
-    for r in range(1,R):
-        print('Vmin Run ', r)
-        VoltageMin[f][r]=range(1,M+1)
-        for n in range(1,M+1):
-            load_builder_unbalanced(n,i)
-            currents, powers, voltages, VoltageMin[f][r][n] =export_loadflow()
-            
-    V_Min_Av[f]=VoltageMin[f].mean(axis=1).values
-    V_Min_Av.index=range(1,M+1)
-                
-    seqz[f],faults[f]=fault_seqz()
-    print(faults)
-    
+    Unbalanced['AllPass_'+str(f)],Unbalanced['Pass_'+str(f)],Unbalanced['THD_Pass_'+str(f)],Unbalanced['All_THDs_'+str(f)],h_index,VoltageMin[f]=harmonic_modeller(M,B,'dummy')
+    AllH[f]=pd.DataFrame(index=h_index, columns=range(1,M+1),dtype=float) 
+    for n in range(1,M+1):
+        AllH[f].loc[:,n]=Unbalanced['Pass_'+str(f)][n].sum(axis=1)
+    allfails=allfails + list(AllH[f][AllH[f].sum(axis=1)/(M*R)<1].index)
+    #seqz[f],faults[f]=fault_seqz()
+    #print(faults[f])
+    V_Min_Av[f]=VoltageMin[f].mean(axis=0)
 
-allfails=[]
+
+allfails=np.unique(allfails)
+
 for f in RSCs:
-    allfails.append(failers[f])
-allfails=np.unique(np.concatenate(allfails))
+    perH[f]=AllH[f].loc[allfails]
+
 #i=random.choice(list(rated_cc.keys()))
 
 pickle_out = open('results/Summary_'+case+'.pickle', "wb")
@@ -318,16 +293,25 @@ pickle.dump(perH, pickle_out)
 pickle_out.close()
 
 pickle_out = open('results/Vmin_'+case+'.pickle', "wb")
-pickle.dump(perH, pickle_out)
+pickle.dump(V_Min_Av, pickle_out)
 pickle_out.close()
 
 
-styles=pd.Series(data=[':','-.','-','--'],index=RSCs)
+pick_in = open('results/Summary_'+case+'.pickle', "rb")
+Unbalanced = pickle.load(pick_in)
 
+pick_in = open('results/AllHarmonics_'+case+'.pickle', "rb")
+perH = pickle.load(pick_in)
+
+pick_in = open('results/Vmin_'+case+'.pickle', "rb")
+V_Min_Av = pickle.load(pick_in)
+
+#styles=pd.Series(data=[':','-.','-','--'],index=RSCs)
+styles=pd.Series(data=[':','-.','-'],index=RSCs)
 fig, (ax1, ax2) = plt.subplots(2, sharex=False)
 for f in RSCs:
-    ax1.plot(100-(Unbalanced['AllPass_'+str(f)].sum(axis=1)/Unbalanced['AllPass_'+str(f)].count(axis=1))*100,label='RSC'+str(f),linestyle=styles[f])
-    ax2.plot(Unbalanced['All_THDs_'+str(f)].index,Unbalanced['All_THDs_'+str(f)].max(axis=1), label='RSC'+str(f),linestyle=styles[f])
+    ax1.plot(100-(Unbalanced['AllPass_'+str(f)].sum(axis=0)/R*100),label='RSC'+str(f),linestyle=styles[f])
+    ax2.plot(Unbalanced['All_THDs_'+str(f)].max(axis=0), label='RSC'+str(f),linestyle=styles[f])
     ax1.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
     ax2.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
 
@@ -342,40 +326,36 @@ ax2.set_xlabel('Number of EVs')
 ax2.grid(linewidth=0.2)
 ax2.set_xlim(1,M)
 ax2.set_ylim(0,5)
-print('Max prob of THD Failure', (100-((Unbalanced['THD_Pass_'+str(f)]==True).sum(axis=1)/Unbalanced['THD_Pass_'+str(f)].count(axis=1))*100).max())
+print('Max prob of THD Failure', (100-((Unbalanced['THD_Pass_'+str(f)]==True).sum(axis=0)/R*100).max()))
 plt.tight_layout()
 
-plt.figure('Specific Harmonics',figsize=(5, 8))
-c=1
-for pl in allfails:
-    ax=plt.subplot(len(allfails),1, c)
-    ax.set_ylabel('% Failure')
-    ax.text(.5,.8,'h='+str(int(perH[f]['h'][pl])),
-        horizontalalignment='left',
-        transform=ax.transAxes)
-    for f in RSCs:
-        if len(perH[f])>0:
-            print(len(perH[f]))
-            if c<len(perH[f]):
-                ax.plot(perH[f].loc[pl][1:M]*100,linestyle=styles[f])
-            if c==len(perH[f]):
-               ax.plot(perH[f].loc[pl][1:M]*100, label='RSC='+str(f),linestyle=styles[f])
-            c=c+1
-    if c>len(allfails):
+
+if len(allfails)>0:
+    plt.figure('Specific Harmonics',figsize=(5, 8))
+    c=1
+    for pl in allfails:
+        ax=plt.subplot(len(allfails),1, c)
+        ax.set_ylabel('% Failure')
+        ax.text(.5,.8,'h='+str(pl),
+            horizontalalignment='left',
+            transform=ax.transAxes)
+        for f in RSCs:
+            ax.plot(100-perH[f].loc[pl][1:M]/R*100,linestyle=styles[f])
+            ax.plot(100-perH[f].loc[pl][1:M]/R*100, label='RSC='+str(f),linestyle=styles[f])
         ax.legend()
-    ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
-    plt.grid(linewidth=0.2)
-    ax.set_xlim(1,M)
-    ax.set_ylim(0,100)
-    ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
-    plt.tight_layout()
+        ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
+        plt.grid(linewidth=0.2)
+        ax.set_xlim(1,M)
+        ax.set_ylim(0,100)
+        ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
+        plt.tight_layout()
+        c=c+1
 
 
 plt.figure()
 for f in RSCs:
-    plt.plot(V_Min_Av.index, V_Min_Av[f].values, linestyle=styles[f], label='Vmin with Rsc='+str(f), linewidth=1)
+    plt.plot(V_Min_Av[f], linestyle=styles[f], label='Vmin with Rsc='+str(f), linewidth=1)
 plt.ylabel('Voltage (V)')
 plt.plot([1,M],[216,216],color='Black',linestyle=":", linewidth=0.5, label='Statutory Min')
 plt.xlabel('Number of EVs')
 plt.legend()
-
