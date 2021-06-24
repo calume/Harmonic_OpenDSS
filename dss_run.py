@@ -29,7 +29,8 @@ dssObj.Start(0)
 ##### Load in the Harmonic Profiles ########
 
 cm='CC'
-case=str(cm)+'_Unbalanced_Diversity100EVs'
+net_type='urban'
+
 
 g55lims=pd.read_csv('g55limits.csv')
 
@@ -58,15 +59,21 @@ M=100 ##--Number of EVs
 B=100 ##--Number of Buses
 R=100 ##--Number of Runs
 
-##RSCs=['WPD_Zmax',15,33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
-##RSCs=[15,33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
-RSCs=[33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+case=str(cm)+'_Unbalanced_'+str(net_type)+str(M)+'EVs_'+str(R)+'Runs_'
 
+##RSCs=['WPD_Zmax',15,33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+
+RSCs=[33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
+if net_type=='urban':
+    f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.72,0.305])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+
+if net_type=='rural':
+    f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.62,0.21])    
 
 
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
-f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.72,0.305]) #for 185 mm - URBAN
+ #for 185 mm - URBAN
 
 ####------Build Lines between B buses
 
@@ -103,12 +110,22 @@ for f in RSCs:
             dssObj.ClearAll() 
             dssText.Command="redirect Master_S.dss"
             
+            ###------RURAL SETUP ----- For Min Source Impedence @ Secondary Tx of 0.053 + 0.009j (WPD EV Emmissions report Table 2-7)
+            if net_type=='rural':
+                dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=12000 ISC1=12000"
+                dssText.Command ="New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.53 ppm=0 %Rs=\"1.68,1.68\" tap=1.000"
+            ###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
+            if net_type=='urban':
+                dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=4000 ISC1=4000"
+                dssText.Command ="New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=7 ppm=0 %Rs=\"3.4,3.4\" tap=1.000"
+
             ##--- Add Lines
             for L in range(1,B):
                 dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/B)+" Units=km"
-            
+            n_d=1
             ##--- Add loads
-            n_d=int(round((0.36+0.64/(n**0.5))*n,0))  ###--- Diversity factor for EV loads
+            if cm=='CC' or cm=='CV':
+                n_d=int(round((0.36+0.64/(n**0.5))*n,0))  ###--- Diversity factor for EV loads
             for k in range(1,n_d+1):
                 i=random.choice(list(rated_cc.keys()))
                 b=random.choice(range(2,B+1))
