@@ -1,5 +1,5 @@
 !4c_300_SAC Cable
 New LineCode.D1 nphases=3 R1=0.102 X1=0.073 R0=0.291 X0=0.087 C1=0 C0=0 Units=km
 
-!4c_185_SAC Cable
+!4c_185_SAC Waveform (Bond)
 New LineCode.D2 nphases=3 R1=0.166 X1=0.073 R0=0.413 X0=0.093 C1=0 C0=0 Units=km 
