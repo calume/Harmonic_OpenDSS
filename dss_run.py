@@ -18,6 +18,7 @@ import pickle
 from matplotlib.ticker import (MultipleLocator,
                                FormatStrFormatter,
                                AutoMinorLocator)
+import os
 
 dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
 dssText = dssObj.Text
@@ -57,9 +58,9 @@ if cm=='de':
  
 ###### Source Impedence is adjusted for Urban/Rural networks
 
-M=50 ##--Number of EVs
-B=50 ##--Number of Buses
-R=5 ##--Number of Runs
+M=5 ##--Number of EVs
+B=5 ##--Number of Buses
+R=2 ##--Number of Runs
 
 case=str(cm)+'_Unbalanced_'+str(net_type)+str(M)+'EVs_'+str(R)+'Runs_'
 
@@ -110,16 +111,16 @@ for f in RSCs:
             Vh_ratios=pd.DataFrame()
             dssObj.ClearAll() 
             dssText.Command="redirect Master_S.dss"
-            ###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
+            ##------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
             if net_type=='urban':
-                dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=4000 ISC1=4000"
-                dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=7 ppm=0 tap=1.000"
+                dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500 "
+                dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.15 ppm=0 tap=1.000"
                 DSSTrans.First
                 DSSTrans.Wdg=1
-                DSSTrans.R=3.4
+                DSSTrans.R=3.1
                 DSSTrans.Wdg=2
-                DSSTrans.R=3.4
-            ##--- Add Lines
+                DSSTrans.R=3.1
+            #--- Add Lines
             for L in range(1,B):
                 dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/B)+" Units=km"
             n_d=1
@@ -133,6 +134,7 @@ for f in RSCs:
                 p=random.choice(range(1,4))  
                 dssText.Command = "New Load.LOAD"+str(k)+" Phases=1 Status=1 Bus1="+str(b)+"."+str(p)+" kV=0.230 kW="+str(EV_power[i])+" PF=1 spectrum="+str(i)
             
+            dssText.Command="New monitor.M"+str(n)+" Reactor.R1 Terminal=2"
             ###--- Solve Load Flow (and record Vmin)
             dssText.Command="Solve"
             bvs = list(DSSCircuit.AllBusVMag)
@@ -145,8 +147,9 @@ for f in RSCs:
 
             ###--- Solve Harmonics
             dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
-            dssText.Command="export monitors m1"
-            res_Reactor=pd.read_csv('LVTest_Mon_m1_1.csv')
+            dssText.Command="export monitors m"+str(n)
+            res_Reactor=pd.read_csv('LVTest_Mon_m'+str(n)+'_1.csv')
+            os.remove('LVTest_Mon_m'+str(n)+'_1.csv')
             Vh_ratios['h']=res_Reactor[' Harmonic']
             Vh_ratios['V_ratio1']=res_Reactor[' V1']/res_Reactor[' V1'][0]*100   ### Convert from V to % of Fundamental (phase A,B,C)
             Vh_ratios['V_ratio2']=res_Reactor[' V2']/res_Reactor[' V2'][0]*100  

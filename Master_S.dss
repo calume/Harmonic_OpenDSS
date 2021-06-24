@@ -1,12 +1,12 @@
 Set DefaultBaseFrequency=50  ! for European system
 New circuit.LVTest
 !###------RURAL SETUP ----- For Min Source Impedence @ Secondary Tx of 0.053 + 0.009j (WPD EV Emmissions report Table 2-7)
-Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=12000 ISC1=12000 
-New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.53 ppm=100 %Rs="1.68,1.68" tap=1.000
+Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500 
+New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.36 ppm=0 %Rs="1.53,1.53" tap=1.000
 
 !###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
-!Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=4000 ISC1=4000 
-!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=7 ppm=0 %Rs="3.4,3.4" tap=1.000
+Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500 
+New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.2 ppm=0 %Rs="3.11,3.11" tap=1.000
 
 New XYCurve.R_Freq npts=30 Xarray=(50,100,150,200,250,300,350,400,450,500,550,650,750,850,950,1050,1150,1250,1350,1450,1550,1650,1750,1850,1950,2050,2150,2250,2350,2450) Yarray=(1.0,1.4,1.7,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.3,3.6,3.9,4.1,4.4,4.6,4.8,5.0,5.2,5.4,5.6,5.7,5.9,6.1,6.2,6.4,6.6,6.7,6.9,7.0)
 New XYCurve.L_Freq npts=4 Xarray=(50,350,400,2500) Yarray=(1,1,0.5,0.5)
@@ -15,7 +15,7 @@ New Reactor.R1 Bus1=1 Bus2=2 R=0.0000102 X=0.0000291 Phases=3 LCurve=L_Freq RCur
 
 Redirect LineCode.txt
 
-!Redirect Lines.txt
+Redirect Lines_S.txt
 
 New "Spectrum.Van_CC" NumHarm=50 CSVFile=SpectrumVan_CC.csv
 New "Spectrum.Leaf_CC" NumHarm=50 CSVFile=SpectrumLeaf_CC.csv
@@ -56,7 +56,7 @@ New "Spectrum.zoe_1ph_12A" NumHarm=50 CSVFile=Spectrumzoe_1ph_12A.csv
 New "Spectrum.zoe_1ph_18A" NumHarm=50 CSVFile=Spectrumzoe_1ph_18A.csv
 New "Spectrum.zoe_1ph_24A" NumHarm=50 CSVFile=Spectrumzoe_1ph_24A.csv
 
-!Redirect Loads.txt
+Redirect Loads_S.txt
 
 New monitor.M1 Reactor.R1 Terminal=2
 !New monitor.M1 Transformer.TR1 Terminal=2

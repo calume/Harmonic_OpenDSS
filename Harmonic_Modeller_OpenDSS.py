@@ -67,17 +67,17 @@ DSSElement=DSSCircuit.ActiveElement
 
 ###### Source Impedence is adjusted for Urban/Rural networks
 
-M=10  ##--Number of EVs
-B=30  ##--Number of Buses
-R=3 ##--Number of Runs
+M=5 ##--Number of EVs
+B=5  ##--Number of Buses
+R=2 ##--Number of Runs
 
-RSCs=[33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
-#RSCs=[15,33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
+#RSCs=[33,66]   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+RSCs=[33,66]  ###--- For Rural where WPD ZMax and RSC=15 are similar
 
 #f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
 #f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
 f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.72,0.305]) #for 185 mm - URBAN
-
+#f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.62,0.21]) #for 185 mm - RURAL
 ####------Build Lines between B buses
 def lineBuilder(B,f_Rsc):
     Lines=pd.read_csv('Lines.txt',delimiter=' ', names=['New','Line','Bus1','Bus2','phases','Linecode','Length','Units'])

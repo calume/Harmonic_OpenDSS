@@ -1,6 +1,3 @@
-New Load.LOAD1 Phases=1 Bus1=2.1 kV=0.230 kW=6.6 PF=1 spectrum=Leaf_CC
-New Load.LOAD2 Phases=1 Bus1=29.3 kV=0.230 kW=7.2 PF=1 spectrum=Zoe_1ph_CC
-New Load.LOAD3 Phases=1 Bus1=18.1 kV=0.230 kW=6.6 PF=1 spectrum=Leaf_CC
-New Load.LOAD4 Phases=1 Bus1=19.3 kV=0.230 kW=6.6 PF=1 spectrum=Van_CC
-New Load.LOAD5 Phases=1 Bus1=17.2 kV=0.230 kW=7.2 PF=1 spectrum=BMW_1ph_CC
-New Load.LOAD6 Phases=1 Bus1=24.1 kV=0.230 kW=6.6 PF=1 spectrum=Van_CC
+New Load.LOAD1 Phases=1 Bus1=2.1 kV=0.230 kW=7.2 PF=1 spectrum=Kona_CC
+New Load.LOAD2 Phases=1 Bus1=3.3 kV=0.230 kW=6.6 PF=1 spectrum=Van_CC
+New Load.LOAD3 Phases=1 Bus1=3.3 kV=0.230 kW=7.2 PF=1 spectrum=Kona_CC
