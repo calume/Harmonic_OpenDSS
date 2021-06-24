@@ -25,7 +25,9 @@ DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads
 DSSLines=DSSCircuit.Lines
 DSSElement=DSSCircuit.ActiveElement
+DSSTrans=DSSCircuit.Transformers
 dssObj.Start(0)
+dssObj.AllowForms=False
 ##### Load in the Harmonic Profiles ########
 
 cm='CC'
@@ -55,9 +57,9 @@ if cm=='de':
  
 ###### Source Impedence is adjusted for Urban/Rural networks
 
-M=100 ##--Number of EVs
-B=100 ##--Number of Buses
-R=100 ##--Number of Runs
+M=50 ##--Number of EVs
+B=50 ##--Number of Buses
+R=5 ##--Number of Runs
 
 case=str(cm)+'_Unbalanced_'+str(net_type)+str(M)+'EVs_'+str(R)+'Runs_'
 
@@ -69,7 +71,6 @@ if net_type=='urban':
 
 if net_type=='rural':
     f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.62,0.21])    
-
 
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
@@ -109,16 +110,15 @@ for f in RSCs:
             Vh_ratios=pd.DataFrame()
             dssObj.ClearAll() 
             dssText.Command="redirect Master_S.dss"
-            
-            ###------RURAL SETUP ----- For Min Source Impedence @ Secondary Tx of 0.053 + 0.009j (WPD EV Emmissions report Table 2-7)
-            if net_type=='rural':
-                dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=12000 ISC1=12000"
-                dssText.Command ="New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.53 ppm=0 %Rs=\"1.68,1.68\" tap=1.000"
             ###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
             if net_type=='urban':
                 dssText.Command ="Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=4000 ISC1=4000"
-                dssText.Command ="New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=7 ppm=0 %Rs=\"3.4,3.4\" tap=1.000"
-
+                dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=7 ppm=0 tap=1.000"
+                DSSTrans.First
+                DSSTrans.Wdg=1
+                DSSTrans.R=3.4
+                DSSTrans.Wdg=2
+                DSSTrans.R=3.4
             ##--- Add Lines
             for L in range(1,B):
                 dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/B)+" Units=km"
@@ -126,6 +126,7 @@ for f in RSCs:
             ##--- Add loads
             if cm=='CC' or cm=='CV':
                 n_d=int(round((0.36+0.64/(n**0.5))*n,0))  ###--- Diversity factor for EV loads
+            
             for k in range(1,n_d+1):
                 i=random.choice(list(rated_cc.keys()))
                 b=random.choice(range(2,B+1))
@@ -237,8 +238,8 @@ ax1.set_ylabel('% Failure')
 ax1.legend()
 ax1.grid(linewidth=0.2)
 ax1.set_xlim(1,M-1)
-ax1.set_xticks(range(0,M))
-ax1.set_xticklabels(range(1,(M+1)))
+ax1.set_xticks(range(0,M,10))
+#ax1.set_xticklabels(range(1,(M+1),10))
 ax1.set_ylim(0,100)
 ax2.set_ylabel('Maximum THD')
 ax2.legend()
@@ -246,8 +247,8 @@ ax2.set_xlabel('Number of EVs')
 ax2.grid(linewidth=0.2)
 ax2.set_xlim(1,M-1)
 ax2.set_ylim(0,5)
-ax2.set_xticks(range(0,M))
-ax2.set_xticklabels(range(1,(M+1)))
+ax2.set_xticks(range(0,M,10))
+#ax2.set_xticklabels(range(1,(M+1),10))
 plt.tight_layout()
 
 
@@ -267,6 +268,7 @@ if len(allfails)>0:
         ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
         plt.grid(linewidth=0.2)
         ax.set_xlim(1,M)
+        ax.set_xticks(range(0,M,10))
         ax.set_ylim(0,100)
         ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
         plt.tight_layout()
@@ -287,9 +289,9 @@ if len(allfails)>5:
         ax.legend()
         ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
         plt.grid(linewidth=0.2)
-        ax.set_xlim(0,M-1)
-        ax.set_xticks(range(0,(M)))
-        ax.set_xticklabels(range(1,(M+1)))
+        ax.set_xlim(0,M)
+        ax.set_xticks(range(0,M,10))
+        #ax.set_xticklabels(range(1,(M+1),10))
         ax.set_ylim(0,100)
         ax.xaxis.set_major_formatter(FormatStrFormatter('% 1.0f'))
         plt.tight_layout()
@@ -300,7 +302,8 @@ for f in RSCs:
     plt.plot(V_Min_Av[f], linestyle=styles[f], label='Vmin with Rsc='+str(f), linewidth=1, color=cols[f])
 plt.ylabel('Voltage (V)')
 plt.plot([0,M],[216,216],color='Black',linestyle=":", linewidth=0.5, label='Statutory Min')
-plt.xticks(ticks=range(0,(M)),labels=range(1,(M+1)))
+plt.xticks(ticks=range(0,M,10))
 plt.xlabel('Number of EVs')
 plt.xlim(0,M-1)
+plt.grid(linewidth=0.2)
 plt.legend()

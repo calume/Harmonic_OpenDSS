@@ -1,8 +1,8 @@
 Set DefaultBaseFrequency=50  ! for European system
 New circuit.LVTest
 !###------RURAL SETUP ----- For Min Source Impedence @ Secondary Tx of 0.053 + 0.009j (WPD EV Emmissions report Table 2-7)
-!Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=12000 ISC1=12000 
-!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.53 ppm=100 %Rs="1.68,1.68" tap=1.000
+Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=12000 ISC1=12000 
+New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=0.53 ppm=100 %Rs="1.68,1.68" tap=1.000
 
 !###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
 !Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=4000 ISC1=4000 
