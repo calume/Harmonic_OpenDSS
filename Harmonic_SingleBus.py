@@ -21,8 +21,10 @@ dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
 dssText = dssObj.Text
 DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads;
+dssObj.Start(0)
+dssObj.AllowForms=False
 
-cm='CC'
+cm='de'
 phh='1ph'
 
 if (cm=='CV' or cm=='CC') and phh=='1ph':
@@ -133,14 +135,14 @@ for i in list(rated_cc.keys()):
                 if q >1:
                     Loads=Loads.append(Loads.loc[0], ignore_index=True)
                     Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    #Loads['Bus1'][pp]='Bus1='+str(q+1)+'.1'
-                    Loads['Bus1'][pp]='Bus1=3.1'
+                    Loads['Bus1'][pp]='Bus1='+str(q+1)+'.1'
+                    #Loads['Bus1'][pp]='Bus1=3.1'
                     pp=pp+1
                 for k in range(2,4):
                     Loads=Loads.append(Loads.loc[0], ignore_index=True)
                     Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    #Loads['Bus1'][pp]='Bus1='+str(q+1)+'.'+str(k)
-                    Loads['Bus1'][pp]='Bus1=3.'+str(k)
+                    Loads['Bus1'][pp]='Bus1='+str(q+1)+'.'+str(k)
+                    #Loads['Bus1'][pp]='Bus1=3.'+str(k)
                     pp=pp+1
         bmw_factor=4
         if i[:3]=='BMW':
@@ -158,7 +160,7 @@ for i in list(rated_cc.keys()):
         faults[ne]={}
         currents[ne]={}
         voltages[ne]={}
-        B=2 ##--Number of Buses
+        B=4 ##--Number of Buses
         if ne=='urban':
             f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.78,0.327])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
         
@@ -170,7 +172,7 @@ for i in list(rated_cc.keys()):
             dssText.Command="Compile "+str(master)+".dss"
             #--- Add Lines
             for L in range(1,B):
-                dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f])+" Units=km"
+                dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/(B-1))+" Units=km"
             
             dssText.Command ="Redirect Loads_S.txt"
            
@@ -189,7 +191,8 @@ for i in list(rated_cc.keys()):
                 DSSTrans.R=0.01
                 DSSTrans.Wdg=2
                 DSSTrans.R=0.01
-            dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
+            #dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
+            dssText.Command="New monitor.M1 Line.LINE3 Terminal=2"
             dssText.Command="Solve"
             dssText.Command="export voltages"
             dssText.Command="export currents"
@@ -208,7 +211,7 @@ for i in list(rated_cc.keys()):
             
             Vsummary[ne+str(f)][i]=round(VoltageMin[f],1)
                 
-            dssText.Command="Solve Mode=harmonics"#" NeglectLoadY=Yes"
+            dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
             dssText.Command="export monitors m1"
             res_Reactor=pd.read_csv('LVTest_Mon_m1_1.csv')
         
@@ -237,7 +240,7 @@ for i in list(rated_cc.keys()):
                 if n==x.index[-1] and ne=='rural' and f==66:
                     vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange',label='G5/5 Limit')
             vax.legend()
-            
+            plt.savefig('figs/'+i+'_12EVs_Balanced.png')
             # x=Ch_ratios['h'][1:]
             # y=Ch_ratios['C_ratio'][1:]
             # lim=g55lims['C'][1:]

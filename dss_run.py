@@ -30,7 +30,7 @@ DSSTrans=DSSCircuit.Transformers
 dssObj.Start(0)
 dssObj.AllowForms=False
 ##### Load in the Harmonic Profiles ########
-cf=1
+cf=2
 cm='CC'
 net_type=['rural','urban']
 
@@ -192,7 +192,6 @@ for net in net_type:
         
         seqz[f]=pd.read_csv('LVTest_EXP_SEQZ.csv')
         faults[f]=pd.read_csv('LVTest_EXP_FAULTS.csv')
-        print(net,f,faults[f]['  1-Phase'][-1:].values)
         print(net,f,faults[f]['  1-Phase'][-1:].values)
         
         AllH[net][f]=pd.DataFrame(index=h_index, columns=range(1,M+1),dtype=float) 
