@@ -1,35 +1,19 @@
 Element, Terminal, P(kW), Q(kvar),  P_Normal, Q_Normal, P_Emergency, Q_Emergency
-"Transformer.TR1"       ,   1,        70.0,         1.1,         0.0,         0.0,         0.0,         0.0
-"Transformer.TR1"       ,   2,       -69.3,        -0.3
-"Reactor.R1"            ,   1,        69.3,         0.3,        67.2,         0.3,        66.5,         0.3
-"Reactor.R1"            ,   2,       -69.3,        -0.3
-"Line.LINE1"            ,   1,        69.3,         0.3,         0.0,         0.0,         0.0,         0.0
-"Line.LINE1"            ,   2,       -69.1,        -0.2
-"Line.LINE2"            ,   1,        55.3,         0.2,         0.0,         0.0,         0.0,         0.0
-"Line.LINE2"            ,   2,       -55.1,        -0.2
-"Line.LINE3"            ,   1,        55.1,         0.2,         0.0,         0.0,         0.0,         0.0
-"Line.LINE3"            ,   2,       -54.9,        -0.1
-"Line.LINE4"            ,   1,        47.7,         0.1,         0.0,         0.0,         0.0,         0.0
-"Line.LINE4"            ,   2,       -47.5,        -0.0
-"Line.LINE5"            ,   1,        34.3,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE5"            ,   2,       -34.2,        -0.0
-"Line.LINE6"            ,   1,         6.6,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE6"            ,   2,        -6.6,        -0.0
-"Line.LINE7"            ,   1,         6.6,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE7"            ,   2,        -6.6,        -0.0
-"Line.LINE8"            ,   1,         6.6,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE8"            ,   2,        -6.6,         0.0
-"Line.LINE9"            ,   1,         0.0,        -0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE9"            ,   2,        -0.0,         0.0
-"Line.LINE10"           ,   1,        -0.0,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE10"           ,   2,         0.0,        -0.0
-"Load.LOAD1"            ,   1,         7.2,        -0.0
-"Load.LOAD2"            ,   1,         6.6,        -0.0
-"Load.LOAD3"            ,   1,         7.2,        -0.0
-"Load.LOAD4"            ,   1,         6.6,        -0.0
-"Load.LOAD5"            ,   1,         7.2,         0.0
-"Load.LOAD6"            ,   1,         6.6,        -0.0
-"Load.LOAD7"            ,   1,         6.6,        -0.0
-"Load.LOAD8"            ,   1,         7.2,         0.0
-"Load.LOAD9"            ,   1,         6.6,        -0.0
-"Load.LOAD10"           ,   1,         6.6,         0.0
+"Transformer.TR1"       ,   1,        -0.0,        -0.0,         0.0,         0.0,         0.0,         0.0
+"Transformer.TR1"       ,   2,         0.0,        -0.0
+"Reactor.R1"            ,   1,        -0.0,        -0.0,         0.0,         0.0,         0.0,         0.0
+"Reactor.R1"            ,   2,         0.0,         0.0
+"Line.LINE1"            ,   1,      1317.2,       579.3,      1054.0,       463.5,       922.4,       405.7
+"Line.LINE1"            ,   2,  1.44E-0311,  1.96E-0311
+"Load.LOAD0"            ,   1,         0.0,         0.0
+"Load.LOAD1"            ,   1,         0.0,         0.0
+"Load.LOAD2"            ,   1,         0.0,         0.0
+"Load.LOAD3"            ,   1,         0.0,         0.0
+"Load.LOAD4"            ,   1,         0.0,         0.0
+"Load.LOAD5"            ,   1,         0.0,         0.0
+"Load.LOAD6"            ,   1,         0.0,         0.0
+"Load.LOAD7"            ,   1,         0.0,         0.0
+"Load.LOAD8"            ,   1,         0.0,         0.0
+"Load.LOAD9"            ,   1,         0.0,         0.0
+"Load.LOAD10"           ,   1,         0.0,         0.0
+"Load.LOAD11"           ,   1,         0.0,         0.0

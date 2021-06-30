@@ -9,8 +9,6 @@ import win32com.client
 import scipy.io
 import numpy as np
 import pandas as pd
-import opendssdirect as dss
-from opendssdirect.utils import run_command
 import csv
 import random
 import cmath
@@ -24,7 +22,7 @@ dssText = dssObj.Text
 DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads;
 
-cm='de'
+cm='CC'
 phh='1ph'
 
 if (cm=='CV' or cm=='CC') and phh=='1ph':
@@ -87,6 +85,7 @@ VoltageMin={}
 VoltageSrc={}
 net_type=['rural','urban']
 RSCs=[33,66]
+master='Master_S'
 ####---- Create Loads
 p=75
 ll={}
@@ -118,27 +117,34 @@ for i in list(rated_cc.keys()):
     coll=pd.Series(index=net_type, data=['w','#eb3636'])
     seqz={}
     faults={}
+    currents={}
+    voltages={}
+    cvf=1
+    if cm=='CV':
+        cvf=0.5
     for ne in net_type:
         print(ne)
         Loads=pd.read_csv('Loads.txt', delimiter=' ', names=['New','Load','Phases','Bus1','kV','kW','PF','spectrum'])
         Loads['spectrum'][0]='spectrum='+str(i)
-        Loads['kW'][0]='kW='+str(EV_power[i])
+        Loads['kW'][0]='kW='+str(EV_power[i]*cvf)
         pp=1
         if phh=='1ph':
-            for q in range(1,7):
+            for q in range(1,5):
                 if q >1:
                     Loads=Loads.append(Loads.loc[0], ignore_index=True)
                     Loads['Load'][pp]='Load.LOAD'+str(pp)
+                    #Loads['Bus1'][pp]='Bus1='+str(q+1)+'.1'
                     Loads['Bus1'][pp]='Bus1=3.1'
                     pp=pp+1
                 for k in range(2,4):
                     Loads=Loads.append(Loads.loc[0], ignore_index=True)
                     Loads['Load'][pp]='Load.LOAD'+str(pp)
+                    #Loads['Bus1'][pp]='Bus1='+str(q+1)+'.'+str(k)
                     Loads['Bus1'][pp]='Bus1=3.'+str(k)
                     pp=pp+1
-        bmw_factor=6
-        if i[:3]=='bmw':
-          bmw_factor=12 
+        bmw_factor=4
+        if i[:3]=='BMW':
+          bmw_factor=bmw_factor*2
         if phh=='3ph':
             Loads['Bus1'][0]='Bus1=3'
             Loads['Phases'][0]='Phases=3'
@@ -150,32 +156,47 @@ for i in list(rated_cc.keys()):
         Loads.to_csv('Loads_S.txt', sep=" ", index=False, header=False)
         seqz[ne]={}
         faults[ne]={}
-        B=5 ##--Number of Buses
+        currents[ne]={}
+        voltages[ne]={}
+        B=2 ##--Number of Buses
         if ne=='urban':
-            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.95,0.4])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
+            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.78,0.327])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
         
         if ne=='rural':
-            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.83,0.285]) 
-        for f in [33,66]:
-            Lines=pd.read_csv('Lines.txt',delimiter=' ', names=['New','Line','Bus1','Bus2','phases','Linecode','Length','Units'])
-            Lines['Length'][0]='Length='+str(f_Rsc[f])
-            Lines.to_csv('Lines_S.txt', sep=" ", index=False, header=False)            
-            g55lims=pd.read_csv('g55limits.csv')
-            
+            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.66,0.209]) 
+        for f in [33,66]:           
+            g55lims=pd.read_csv('g55limits.csv')           
             dssObj.ClearAll() 
-            dssText.Command="Compile Master_S.dss"
-            #dssText.Command="Edit Reactor.R1 R="+str(0.166*f_Rsc[f])+" X="+str(0.073*f_Rsc[f])
-            dssText.Command ="Redirect Lines_S.txt"
+            dssText.Command="Compile "+str(master)+".dss"
+            #--- Add Lines
+            for L in range(1,B):
+                dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f])+" Units=km"
+            
             dssText.Command ="Redirect Loads_S.txt"
-            if ne=='urban':
+           
+            if ne=='urban' and master=='Master_R':
                 dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.15 ppm=0 tap=1.000"
                 DSSTrans.First
                 DSSTrans.Wdg=1
                 DSSTrans.R=3.1
                 DSSTrans.Wdg=2
                 DSSTrans.R=3.1
+            if ne=='urban' and master=='Master_S':
+                dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=0.01 ppm=0 tap=1.000"
+                dssText.Command ="Edit Reactor.R1 Bus1=1 Bus2=2 R=0.0212 X=0.0217 Phases=3 LCurve=L_Freq RCurve=R_Freq"
+                DSSTrans.First
+                DSSTrans.Wdg=1
+                DSSTrans.R=0.01
+                DSSTrans.Wdg=2
+                DSSTrans.R=0.01
+            dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
             dssText.Command="Solve"
-    
+            dssText.Command="export voltages"
+            dssText.Command="export currents"
+            dssText.Command="export powers"
+            
+            currents[ne][f]=pd.read_csv('LVTest_EXP_CURRENTS.csv')
+            voltages[ne][f]=pd.read_csv('LVTest_EXP_VOLTAGES.csv')
             bvs = list(DSSCircuit.AllBusVMag)
             Voltages = bvs[0::3], bvs[1::3], bvs[2::3]
             VoltArray = np.zeros((len(Voltages[0]), 3))
@@ -183,11 +204,11 @@ for i in list(rated_cc.keys()):
             for z in range(0, 3):
                 VoltArray[:, z] = np.array(Voltages[z], dtype=float)
             VoltageMin[f]=VoltArray[-1:].mean()
-            VoltageSrc[f]=VoltArray[1].mean()
+            VoltageSrc[f]=VoltArray[2].mean()
             
             Vsummary[ne+str(f)][i]=round(VoltageMin[f],1)
                 
-            dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
+            dssText.Command="Solve Mode=harmonics"#" NeglectLoadY=Yes"
             dssText.Command="export monitors m1"
             res_Reactor=pd.read_csv('LVTest_Mon_m1_1.csv')
         
@@ -239,7 +260,7 @@ for i in list(rated_cc.keys()):
             faults[ne][f]=pd.read_csv('LVTest_EXP_FAULTS.csv')
             
             cc=cc+1
-            print('Zterminal '+str(f),round(seqz[ne][f][' Z1'][1],4),'Zend'+str(f),round(seqz[ne][f][' Z1'][-1:].values[0],4))
+            print('Zterminal '+str(f),round(seqz[ne][f][' Z1'][2],4),'Zend'+str(f),round(seqz[ne][f][' Z1'][-1:].values[0],4),'Zdiff ',-round(seqz[ne][f][' Z1'][2]-seqz[ne][f][' Z1'][-1:].values[0],4))
             print('Fault End '+str(f),faults[ne][f]['  1-Phase'][-1:].values)
             print('Vsource '+str(f),round(VoltageSrc[f],2),'VEnd '+str(f),round(VoltageMin[f],2))
         plt.tight_layout()

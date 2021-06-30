@@ -31,7 +31,7 @@ dssObj.Start(0)
 dssObj.AllowForms=False
 ##### Load in the Harmonic Profiles ########
 cf=1
-cm='CV'
+cm='CC'
 net_type=['rural','urban']
 
 g55lims=pd.read_csv('g55limits.csv')
@@ -56,14 +56,15 @@ if cm=='de':
     EV_power=pd.Series(index=rated_cc.keys(),data=[1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52])
  
 ###### Source Impedence is adjusted for Urban/Rural networks
-n_evs=100
+
+n_evs=50
 n_buses=50
 R=500
- ##--Number of Runs
+  ##--Number of Runs
 
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.6,0.62,0.21]) #for 185 mm - RURAL
 ##f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.77,1.7,0.72,0.305]) #for 185 mm - URBAN
- #for 185 mm - URBAN
+  #for 185 mm - URBAN
 
 ####------Build Lines between B buses
 RSCs=[33,66]
@@ -120,12 +121,13 @@ for net in net_type:
                 dssText.Command="Compile Master_S.dss"
                 ##------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
                 if net=='urban':
-                    dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.15 ppm=0 tap=1.000"
+                    dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=0.01 ppm=0 tap=1.000"
+                    dssText.Command ="Edit Reactor.R1 Bus1=1 Bus2=2 R=0.0212 X=0.0217 Phases=3 LCurve=L_Freq RCurve=R_Freq"
                     DSSTrans.First
                     DSSTrans.Wdg=1
-                    DSSTrans.R=3.1
+                    DSSTrans.R=0.01
                     DSSTrans.Wdg=2
-                    DSSTrans.R=3.1
+                    DSSTrans.R=0.01
                 #--- Add Lines
                 for L in range(1,B):
                     dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/B)+" Units=km"
@@ -136,13 +138,15 @@ for net in net_type:
                     n_d=int(round((0.36+0.64/(n**0.5))*n,0))  ###--- Diversity factor for EV loads
                 if cm=='CV':
                     cv_factor=0.5
+                rb=[]
                 for k in range(1,n_d+1):
                     i=random.choice(list(rated_cc.keys()))
                     b=random.choice(range(2,B+1))
+                    rb.append(b-1)
                     p=random.choice(range(1,4))  
                     dssText.Command = "New Load.LOAD"+str(k)+" Phases=1 Status=1 Bus1="+str(b)+"."+str(p)+" kV=0.230 kW="+str(EV_power[i]*cv_factor)+" PF=1 spectrum="+str(i)
                 
-                dssText.Command="New monitor.M"+str(n)+" Reactor.R1 Terminal=2"
+                dssText.Command="New monitor.M"+str(n)+" Line.LINE"+str(max(rb))+" Terminal=2"
                 ###--- Solve Load Flow (and record Vmin)
                 dssText.Command="Solve"
                 bvs = list(DSSCircuit.AllBusVMag)
@@ -157,7 +161,7 @@ for net in net_type:
                 dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
                 dssText.Command="export monitors m"+str(n)
                 res_Reactor=pd.read_csv('LVTest_Mon_m'+str(n)+'_1.csv')
-                os.remove('LVTest_Mon_m'+str(n)+'_1.csv')
+                #os.remove('LVTest_Mon_m'+str(n)+'_1.csv')
                 Vh_ratios['h']=res_Reactor[' Harmonic']
                 Vh_ratios['V_ratio1']=res_Reactor[' V1']/res_Reactor[' V1'][0]*100   ### Convert from V to % of Fundamental (phase A,B,C)
                 Vh_ratios['V_ratio2']=res_Reactor[' V2']/res_Reactor[' V2'][0]*100  
@@ -225,18 +229,25 @@ pickle_out = open('results/Vmin_'+case+'.pickle', "wb")
 pickle.dump(V_Min_Av, pickle_out)
 pickle_out.close()
 
-M=n_evs ##--Number of EVs
-B=n_buses ##--Number of Buses
-case=str(cm)+'_Unbalanced_'+str(M)+'EVs_'+str(R)+'Runs_'
+# cf=1
+# cm='CV'
+# net_type=['rural','urban']
+# n_evs=100
+# n_buses=50
+# R=500
+# RSCs=[33,66]
+# M=n_evs ##--Number of EVs
+# B=n_buses ##--Number of Buses
+# case=str(cm)+'_Unbalanced_'+str(M)+'EVs_'+str(R)+'Runs_'
    
-pick_in = open('results/Summary_'+case+'.pickle', "rb")
-Summary = pickle.load(pick_in)
+# pick_in = open('results/Summary_'+case+'.pickle', "rb")
+# Summary = pickle.load(pick_in)
 
-pick_in = open('results/AllHarmonics_'+case+'.pickle', "rb")
-perH = pickle.load(pick_in)
+# pick_in = open('results/AllHarmonics_'+case+'.pickle', "rb")
+# perH = pickle.load(pick_in)
 
-pick_in = open('results/Vmin_'+case+'.pickle', "rb")
-V_Min_Av = pickle.load(pick_in)
+# pick_in = open('results/Vmin_'+case+'.pickle', "rb")
+# V_Min_Av = pickle.load(pick_in)
 
 styles=pd.Series(data=[':','-'],index=net_type)
 cols=pd.Series(data=['tab:green','tab:red'],index=net_type)

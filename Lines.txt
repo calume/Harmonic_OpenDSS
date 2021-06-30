@@ -1,1 +1,1 @@
-New Line.LINE1 Bus1=2 Bus2=3 phases=3 Linecode=D2 Length=2 Units=km
+New Line.LINE1 Bus1=2 Bus2=2 phases=3 Linecode=D2 Length=2 Units=km
