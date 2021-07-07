@@ -21,11 +21,13 @@ dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
 dssText = dssObj.Text
 DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads;
+DSSLines=DSSCircuit.Lines;
 dssObj.Start(0)
 dssObj.AllowForms=False
+DSSCktElement = DSSCircuit.ActiveCktElement
 
-cm='de'
-phh='1ph'
+cm='CV'
+phh='3ph'
 
 if (cm=='CV' or cm=='CC') and phh=='1ph':
     rated_cc=pd.read_excel('rated_'+str(cm)+'_stats.xlsx', sheet_name=None)
@@ -71,7 +73,7 @@ if cm=='de' and phh=='3ph':
     
     
 g55lims=pd.read_csv('g55limits.csv')
-
+g55lims['L'][0:10]=2
 ####### OpenDSS Initialisation #########
 
 dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
@@ -93,19 +95,20 @@ p=75
 ll={}
 Vsummary=pd.DataFrame(index=rated_cc.keys(),columns=['rural33', 'rural66', 'urban33', 'urban66'])
 for i in list(rated_cc.keys()):
+    print(i)
     ####---- Create Spectrum CSVs
     spectrum=pd.DataFrame()
     spectrum['h']=rated_cc[i]['Harmonic order']
     spectrum['mag']=rated_cc[i]['Ih mag '+str(p)+'% percentile']/rated_cc[i]['Ih mag '+str(p)+'% percentile'][0]*100
-    spectrum['ang']=rated_cc[i]['Ih phase mean w.r.t. L1_Ih1']
+    spectrum['ang']=rated_cc[i]['Ih phase mean w.r.t. L1_Ih1']/spectrum['h']
     spectrum.to_csv('Spectrum'+i+'.csv', header=False, index=False)
     
     #i =list(rated_cc.keys())[3]
     vfig,vax=plt.subplots(figsize=(5.5, 3.5))
     plt.grid(linewidth=0.2)
-    vax.text(.4,.9,str(i),
-    horizontalalignment='left',
-    transform=vax.transAxes)
+    # vax.text(.4,.9,str(i),
+    # horizontalalignment='left',
+    # transform=vax.transAxes)
     #cfig,cax=plt.subplots()
     #vax.set_title(i+' Voltage Harmonics')
     # cax.set_title(i+' Current Harmonics')
@@ -126,56 +129,41 @@ for i in list(rated_cc.keys()):
         cvf=0.5
     for ne in net_type:
         print(ne)
-        Loads=pd.read_csv('Loads.txt', delimiter=' ', names=['New','Load','Phases','Bus1','kV','kW','PF','spectrum'])
-        Loads['spectrum'][0]='spectrum='+str(i)
-        Loads['kW'][0]='kW='+str(EV_power[i]*cvf)
-        pp=1
-        if phh=='1ph':
-            for q in range(1,5):
-                if q >1:
-                    Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                    Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    Loads['Bus1'][pp]='Bus1='+str(q+1)+'.1'
-                    #Loads['Bus1'][pp]='Bus1=3.1'
-                    pp=pp+1
-                for k in range(2,4):
-                    Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                    Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    Loads['Bus1'][pp]='Bus1='+str(q+1)+'.'+str(k)
-                    #Loads['Bus1'][pp]='Bus1=3.'+str(k)
-                    pp=pp+1
-        bmw_factor=4
-        if i[:3]=='BMW':
-          bmw_factor=bmw_factor*2
-        if phh=='3ph':
-            Loads['Bus1'][0]='Bus1=3'
-            Loads['Phases'][0]='Phases=3'
-            Loads['kV'][0]='kV=0.4'
-            for q in range(1,bmw_factor):
-                Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                Loads['Load'][q]='Load.LOAD'+str(q)
-        ll[i]=Loads
-        Loads.to_csv('Loads_S.txt', sep=" ", index=False, header=False)
         seqz[ne]={}
         faults[ne]={}
         currents[ne]={}
         voltages[ne]={}
-        B=4 ##--Number of Buses
+        B=5 ##--Number of Buses
         if ne=='urban':
             f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.78,0.327])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
         
         if ne=='rural':
             f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.66,0.209]) 
-        for f in [33,66]:           
-            g55lims=pd.read_csv('g55limits.csv')           
+        for f in [33,66]:                      
             dssObj.ClearAll() 
             dssText.Command="Compile "+str(master)+".dss"
             #--- Add Lines
-            for L in range(1,B):
-                dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/(B-1))+" Units=km"
+            for L in range(1,B-1):
+                dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/(B-2))+" Units=km"
             
-            dssText.Command ="Redirect Loads_S.txt"
-           
+            #--- Add Loads
+            if phh=='1ph':
+                cp=1
+                for k in range(1,B):
+                    for q in range(1,4):
+                        dssText.Command = "New Load.LOAD"+str(cp)+" Phases=1 Status=1 Bus1="+str(k+1)+"."+str(q)+" kV=0.230 kW="+str(EV_power[i]*cvf)+" PF=1 spectrum="+str(i)
+                        cp=cp+1
+            bmw_factor=B
+            if i[:3]=='BMW':
+                bmw_factor=bmw_factor*2-1
+            oo=2
+            if phh=='3ph':
+                for cp in range(1,bmw_factor):
+                    dssText.Command = "New Load.LOAD"+str(cp)+" Phases=3 Status=1 Bus1="+str(oo)+" kV=0.4 kW="+str(EV_power[i]*cvf)+" PF=1 spectrum="+str(i)
+                    oo=oo+1
+                    if oo>4:
+                        oo=2
+                cp=cp+1
             if ne=='urban' and master=='Master_R':
                 dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.15 ppm=0 tap=1.000"
                 DSSTrans.First
@@ -191,8 +179,10 @@ for i in list(rated_cc.keys()):
                 DSSTrans.R=0.01
                 DSSTrans.Wdg=2
                 DSSTrans.R=0.01
+            
             #dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
-            dssText.Command="New monitor.M1 Line.LINE3 Terminal=2"
+            dssText.Command="New monitor.M1 Line.Line3 Terminal=2"
+            dssText.Command="Calcvoltagebases"
             dssText.Command="Solve"
             dssText.Command="export voltages"
             dssText.Command="export currents"
@@ -233,14 +223,14 @@ for i in list(rated_cc.keys()):
             vax.bar(x+pq[cc],y, width=0.4,label=ne+' RSC'+str(f),edgecolor='black',hatch=htch[f],color=coll[ne])   ###--- Plotting the Voltage harmonics
             vax.set_xticks(np.arange(1, 50, 2))
             
-            vax.set_ylim(0,2)
+            vax.set_ylim(0,1)
             for n in x.index:  ###--- Plotting the G5 Limit
                 if n<x.index[-1]:
                     vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange')
                 if n==x.index[-1] and ne=='rural' and f==66:
                     vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange',label='G5/5 Limit')
-            vax.legend()
-            plt.savefig('figs/'+i+'_12EVs_Balanced.png')
+            vax.legend(framealpha=1,bbox_to_anchor=(0, 1), loc='upper left', ncol=2)
+            plt.savefig('figs/'+i+'_'+str(cp-1)+'EVs_Balanced.png')
             # x=Ch_ratios['h'][1:]
             # y=Ch_ratios['C_ratio'][1:]
             # lim=g55lims['C'][1:]
@@ -267,3 +257,13 @@ for i in list(rated_cc.keys()):
             print('Fault End '+str(f),faults[ne][f]['  1-Phase'][-1:].values)
             print('Vsource '+str(f),round(VoltageSrc[f],2),'VEnd '+str(f),round(VoltageMin[f],2))
         plt.tight_layout()
+        
+    print(i)
+    iline=DSSLines.First
+    while iline>0:
+        print(DSSLines.Name, 'Bus1=',DSSLines.Bus1,'Bus2=', DSSLines.Bus2)
+        iline=DSSLines.Next
+    iload=DSSLoads.First
+    while iload>0:
+        print(DSSLoads.Name, 'Bus=',DSSCktElement.BusNames, 'kW=',DSSLoads.kW,'pf=',DSSLoads.PF,'spectrum=',DSSLoads.spectrum)
+        iload=DSSLoads.Next

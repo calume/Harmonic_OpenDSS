@@ -1,19 +1,15 @@
 Element, Terminal, P(kW), Q(kvar),  P_Normal, Q_Normal, P_Emergency, Q_Emergency
-"Transformer.TR1"       ,   1,        -0.0,        -0.0,         0.0,         0.0,         0.0,         0.0
-"Transformer.TR1"       ,   2,         0.0,        -0.0
-"Reactor.R1"            ,   1,        -0.0,        -0.0,         0.0,         0.0,         0.0,         0.0
-"Reactor.R1"            ,   2,         0.0,         0.0
-"Line.LINE1"            ,   1,      1317.2,       579.3,      1054.0,       463.5,       922.4,       405.7
-"Line.LINE1"            ,   2,  1.44E-0311,  1.96E-0311
-"Load.LOAD0"            ,   1,         0.0,         0.0
-"Load.LOAD1"            ,   1,         0.0,         0.0
-"Load.LOAD2"            ,   1,         0.0,         0.0
-"Load.LOAD3"            ,   1,         0.0,         0.0
-"Load.LOAD4"            ,   1,         0.0,         0.0
-"Load.LOAD5"            ,   1,         0.0,         0.0
-"Load.LOAD6"            ,   1,         0.0,         0.0
-"Load.LOAD7"            ,   1,         0.0,         0.0
-"Load.LOAD8"            ,   1,         0.0,         0.0
-"Load.LOAD9"            ,   1,         0.0,         0.0
-"Load.LOAD10"           ,   1,         0.0,         0.0
-"Load.LOAD11"           ,   1,         0.0,         0.0
+"Transformer.TR1"       ,   1,        44.3,         0.3,         0.0,         0.0,         0.0,         0.0
+"Transformer.TR1"       ,   2,       -44.3,        -0.3
+"Reactor.R1"            ,   1,        44.3,         0.3,        41.0,         0.3,        39.8,         0.2
+"Reactor.R1"            ,   2,       -44.1,        -0.0
+"Line.LINE1"            ,   1,        22.1,         0.0,         0.0,         0.0,         0.0,         0.0
+"Line.LINE1"            ,   2,       -22.0,        -0.0
+"Line.LINE2"            ,   1,        11.0,         0.0,         0.0,         0.0,         0.0,         0.0
+"Line.LINE2"            ,   2,       -11.0,         0.0
+"Line.LINE3"            ,   1,        -0.0,         0.0,         0.0,         0.0,         0.0,         0.0
+"Line.LINE3"            ,   2,         0.0,        -0.0
+"Load.LOAD1"            ,   1,        11.0,         0.0
+"Load.LOAD2"            ,   1,        11.0,         0.0
+"Load.LOAD3"            ,   1,        11.0,         0.0
+"Load.LOAD4"            ,   1,        11.0,         0.0

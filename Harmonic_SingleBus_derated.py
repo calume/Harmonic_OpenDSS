@@ -21,6 +21,8 @@ dssObj = win32com.client.Dispatch("OpenDSSEngine.DSS")
 dssText = dssObj.Text
 DSSCircuit = dssObj.ActiveCircuit
 DSSLoads=DSSCircuit.Loads;
+DSSCktElement = DSSCircuit.ActiveCktElement
+DSSLines=DSSCircuit.Lines;
 dssObj.Start(0)
 dssObj.AllowForms=False
 cm='de'
@@ -95,26 +97,24 @@ if phh=='1ph':
 
 if phh =='3ph':
     cars=['bmw_3ph','zoe_3ph']
-    ratings={}
-    ratings['bmw_3ph']=[6,9,12,15]
-    ratings['zoe_3ph']=[6,12,18,24]
 
 ne='rural'
 f=33
 seqz={}
 faults={}
 for i in list(cars):
-    ratings={}
-    ratings['bmw_3ph']=[6,9,12,15]
-    ratings['zoe_3ph']=[6,12,18,24]
+    if phh =='3ph':
+        ratings={}
+        ratings['bmw_3ph']=[6,9,12,15]
+        ratings['zoe_3ph']=[6,12,18,24]
     ####---- Create Spectrum CSVs
     cc=0
     #i =list(rated_cc.keys())[3]
     vfig,vax=plt.subplots(figsize=(5.5, 3.5))
     plt.grid(linewidth=0.2)
-    vax.text(.4,.9,str(i),
-    horizontalalignment='left',
-    transform=vax.transAxes)
+    # vax.text(.4,.9,str(i),
+    # horizontalalignment='left',
+    # transform=vax.transAxes)
     #cfig,cax=plt.subplots()
     #vax.set_title(i+' Voltage Harmonics')
     # cax.set_title(i+' Current Harmonics')
@@ -131,58 +131,50 @@ for i in list(cars):
     coll=pd.Series(index=ratings, data=['w','#eb3636','#90ee90','#add8e6'])
     for r in ratings:  
         print(ne)
-        Loads=pd.read_csv('Loads.txt', delimiter=' ', names=['New','Load','Phases','Bus1','kV','kW','PF','spectrum'])
-        Loads['spectrum'][0]='spectrum='+str(i+'_'+str(r)+'A')
-        Loads['kW'][0]='kW='+str(EV_power[i+'_'+str(r)+'A'])
-        pp=1
-        if phh=='1ph':
-            for q in range(1,5):
-                if q >1:
-                    Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                    Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    Loads['Bus1'][pp]='Bus1=3.1'
-                    pp=pp+1
-                for k in range(2,4):
-                    Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                    Loads['Load'][pp]='Load.LOAD'+str(pp)
-                    Loads['Bus1'][pp]='Bus1=3.'+str(k)
-                    pp=pp+1
-        bmw_factor=4
-        if i[:3]=='bmw':
-          bmw_factor=bmw_factor*2 
-        if phh=='3ph':
-            Loads['Bus1'][0]='Bus1=3'
-            Loads['Phases'][0]='Phases=3'
-            Loads['kV'][0]='kV=0.4'
-            for q in range(1,bmw_factor):
-                Loads=Loads.append(Loads.loc[0], ignore_index=True)
-                Loads['Load'][q]='Load.LOAD'+str(q)
-        ll[i+'_'+str(r)+'A']=Loads
-        Loads.to_csv('Loads_S.txt', sep=" ", index=False, header=False)
-        B=5 ##--Number of Buses
+        B=5##--Number of Buses
         if ne=='urban':
             f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.78,0.327])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
         
         if ne=='rural':
             f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.66,0.209])  
-            
-        Lines=pd.read_csv('Lines.txt',delimiter=' ', names=['New','Line','Bus1','Bus2','phases','Linecode','Length','Units'])
-        Lines['Length'][0]='Length='+str(f_Rsc[f])
-        Lines.to_csv('Lines_S.txt', sep=" ", index=False, header=False)            
+
         g55lims=pd.read_csv('g55limits.csv')
         
         dssObj.ClearAll() 
         dssText.Command="Compile Master_S.dss"
-        #dssText.Command="Edit Reactor.R1 R="+str(0.166*f_Rsc[f])+" X="+str(0.073*f_Rsc[f])
-        dssText.Command ="Redirect Lines_S.txt"
-        dssText.Command ="Redirect Loads_S.txt"
+           
+        #--- Add Lines
+        for L in range(1,B-1):
+            dssText.Command ="New Line.LINE"+str(L)+" Bus1="+str(L+1)+" Bus2="+str(L+2)+" phases=3 Linecode=D2 Length="+str(f_Rsc[f]/(B-2))+" Units=km"
+        #--- Add Loads
+        if phh=='1ph':
+            cp=1
+            for k in range(1,B):
+                for q in range(1,4):
+                    dssText.Command = "New Load.LOAD"+str(cp)+" Phases=1 Status=1 Bus1="+str(k+1)+"."+str(q)+" kV=0.230 kW="+str(EV_power[i+"_"+str(r)+"A"])+" PF=1 spectrum="+str(i+"_"+str(r)+"A")
+                    cp=cp+1
+        bmw_factor=B
+        if i[:3]=='BMW':
+            bmw_factor=bmw_factor*2-1
+        oo=1
+        if phh=='3ph':
+            for cp in range(1,bmw_factor):
+                dssText.Command = "New Load.LOAD"+str(cp)+" Phases=3 Status=1 Bus1="+str(oo)+" kV=0.4 kW="+str(EV_power[i+"_"+str(r)+"A"])+" PF=1 spectrum="+str(i+"_"+str(r)+"A")
+                oo=oo+1
+                if oo>4:
+                    oo=2
+            cp=cp+1
         if ne=='urban':
-            dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.15 ppm=0 tap=1.000"
+            dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=0.01 ppm=0 tap=1.000"
+            dssText.Command ="Edit Reactor.R1 Bus1=1 Bus2=2 R=0.0212 X=0.0217 Phases=3 LCurve=L_Freq RCurve=R_Freq"
             DSSTrans.First
             DSSTrans.Wdg=1
-            DSSTrans.R=3.1
+            DSSTrans.R=0.01
             DSSTrans.Wdg=2
-            DSSTrans.R=3.1
+            DSSTrans.R=0.01
+        
+        #dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
+        dssText.Command="New monitor.M1 Line.LINE3 Terminal=2"
         dssText.Command="Solve"
     
         bvs = list(DSSCircuit.AllBusVMag)
@@ -218,13 +210,13 @@ for i in list(cars):
         vax.bar(x+pq[cc],y, width=0.4,label=str(r)+' A',edgecolor='black',hatch=htch[r],color=coll[r])   ###--- Plotting the Voltage harmonics
         vax.set_xticks(np.arange(1, 50, 2))
         
-        vax.set_ylim(0,2)
+        vax.set_ylim(0,1)
         for n in x.index:  ###--- Plotting the G5 Limit
             if n<x.index[-1]:
                 vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange')
             if n==x.index[-1] and r==24:
                 vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange',label='G5/5 Limit')
-        vax.legend()
+        vax.legend(framealpha=1,bbox_to_anchor=(0, 1.1), loc='upper left', ncol=2)
         
         # x=Ch_ratios['h'][1:]
         # y=Ch_ratios['C_ratio'][1:]
@@ -251,4 +243,14 @@ for i in list(cars):
         print('Zterminal '+str(i+'_'+str(r)+'A'),round(seqz[i][r][' Z1'][1],4),'Zend',round(seqz[i][r][' Z1'][-1:].values[0],4))
         print('Fault End '+str(i+'_'+str(r)+'A'),faults[i][r]['  1-Phase'][-1:].values)
         print('Vsource '+str(i+'_'+str(r)+'A'),round(VoltageSrc[i+'_'+str(r)+'A'],2),'VEnd ',round(VoltageMin[i+'_'+str(r)+'A'],2))
+    plt.savefig('figs/'+i+'_'+cm+'_'+str(cp-1)+'EVs_Balanced.png')
     plt.tight_layout()
+    print(i)
+    iline=DSSLines.First
+    while iline>0:
+        print(DSSLines.Name, 'Bus1=',DSSLines.Bus1,'Bus2=', DSSLines.Bus2)
+        iline=DSSLines.Next
+    iload=DSSLoads.First
+    while iload>0:
+        print(DSSLoads.Name, 'Bus=',DSSCktElement.BusNames, 'kW=',DSSLoads.kW)
+        iload=DSSLoads.Next
