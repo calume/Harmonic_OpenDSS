@@ -1,15 +1,23 @@
 Element, Terminal, P(kW), Q(kvar),  P_Normal, Q_Normal, P_Emergency, Q_Emergency
-"Transformer.TR1"       ,   1,        44.3,         0.3,         0.0,         0.0,         0.0,         0.0
-"Transformer.TR1"       ,   2,       -44.3,        -0.3
-"Reactor.R1"            ,   1,        44.3,         0.3,        41.0,         0.3,        39.8,         0.2
-"Reactor.R1"            ,   2,       -44.1,        -0.0
-"Line.LINE1"            ,   1,        22.1,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE1"            ,   2,       -22.0,        -0.0
-"Line.LINE2"            ,   1,        11.0,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE2"            ,   2,       -11.0,         0.0
-"Line.LINE3"            ,   1,        -0.0,         0.0,         0.0,         0.0,         0.0,         0.0
-"Line.LINE3"            ,   2,         0.0,        -0.0
-"Load.LOAD1"            ,   1,        11.0,         0.0
-"Load.LOAD2"            ,   1,        11.0,         0.0
-"Load.LOAD3"            ,   1,        11.0,         0.0
-"Load.LOAD4"            ,   1,        11.0,         0.0
+"Transformer.TR1"       ,   1,        90.0,         1.4,         0.0,         0.0,         0.0,         0.0
+"Transformer.TR1"       ,   2,       -89.9,        -1.3
+"Reactor.R1"            ,   1,        89.9,         1.3,        86.6,         1.3,        85.5,         1.3
+"Reactor.R1"            ,   2,       -88.9,        -0.3
+"Line.LINE1"            ,   1,        66.7,         0.3,         0.0,         0.0,         0.0,         0.0
+"Line.LINE1"            ,   2,       -66.2,        -0.1
+"Line.LINE2"            ,   1,        44.2,         0.1,         0.0,         0.0,         0.0,         0.0
+"Line.LINE2"            ,   2,       -43.9,        -0.0
+"Line.LINE3"            ,   1,        22.0,         0.0,         0.0,         0.0,         0.0,         0.0
+"Line.LINE3"            ,   2,       -21.9,         0.0
+"Load.LOAD1"            ,   1,         7.4,         0.0
+"Load.LOAD2"            ,   1,         7.4,         0.0
+"Load.LOAD3"            ,   1,         7.4,         0.0
+"Load.LOAD4"            ,   1,         7.4,         0.0
+"Load.LOAD5"            ,   1,         7.4,         0.0
+"Load.LOAD6"            ,   1,         7.4,         0.0
+"Load.LOAD7"            ,   1,         7.3,         0.0
+"Load.LOAD8"            ,   1,         7.3,         0.0
+"Load.LOAD9"            ,   1,         7.3,         0.0
+"Load.LOAD10"           ,   1,         7.3,         0.0
+"Load.LOAD11"           ,   1,         7.3,         0.0
+"Load.LOAD12"           ,   1,         7.3,         0.0

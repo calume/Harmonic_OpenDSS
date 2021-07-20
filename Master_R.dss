@@ -1,66 +1,32 @@
+Clear
 Set DefaultBaseFrequency=50  ! for European system
 New circuit.LVTest
-!###------RURAL SETUP ----- For Min Source Impedence @ Secondary Tx of 0.053 + 0.009j (WPD EV Emmissions report Table 2-7)
-Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500 
-New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=1.53 ppm=0 %Rs="1.53,1.53" tap=1.000
 
-!###------URBAN SETUP ----- For Min Source Impedence @ Secondary Tx of 0.022 +0.024j (WPD EV Emmissions report Table 2-7)
-!Edit Vsource.Source BasekV=11 Phases=3 pu=1.00 ISC3=3000 ISC1=2500 
-!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=6.2 ppm=0 %Rs="3.11,3.11" tap=1.000
+Edit Vsource.Source BasekV=0.415 Phases=3 pu=1.00 R1=0.00000001 X1=0.00000001 R0=0.00000001 X0=0.00000001
 
-New XYCurve.R_Freq npts=30 Xarray=(50,100,150,200,250,300,350,400,450,500,550,650,750,850,950,1050,1150,1250,1350,1450,1550,1650,1750,1850,1950,2050,2150,2250,2350,2450) Yarray=(1.0,1.4,1.7,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.3,3.6,3.9,4.1,4.4,4.6,4.8,5.0,5.2,5.4,5.6,5.7,5.9,6.1,6.2,6.4,6.6,6.7,6.9,7.0)
-New XYCurve.L_Freq npts=4 Xarray=(50,350,400,2500) Yarray=(1,1,0.5,0.5)
+!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[100 100] XHL=1.53 ppm=0 %Rs="1.53,1.53" tap=1.000
+New XYCurve.R_Freq npts=30 Xarray=(50,2450) Yarray=(1,1)
+New XYCurve.L_Freq npts=4 Xarray=(50,2450) Yarray=(1,1)
 
-New Reactor.R1 Bus1=1 Bus2=2 R=0.0000102 X=0.0000291 Phases=3 LCurve=L_Freq RCurve=R_Freq
+New "Spectrum.Test" NumHarm=50 CSVFile=Spectrum_Test.csv
 
-Redirect LineCode.txt
+New Reactor.R1 Bus1=SourceBus Bus2=1 R=0.5 X=0.5 Phases=3 LCurve=L_Freq RCurve=R_Freq
 
-!Redirect Lines_S.txt
+New Load.LOAD0 Phases=1 Bus1=1.1 kV=0.230 kW=10 PF=1 spectrum=Test
 
-New "Spectrum.Van_CC" NumHarm=50 CSVFile=SpectrumVan_CC.csv
-New "Spectrum.Leaf_CC" NumHarm=50 CSVFile=SpectrumLeaf_CC.csv
-New "Spectrum.BMW_1ph_CC" NumHarm=50 CSVFile=SpectrumBMW_1ph_CC.csv
-New "Spectrum.Zoe_1ph_CC" NumHarm=50 CSVFile=SpectrumZoe_1ph_CC.csv
-New "Spectrum.Kona_CC" NumHarm=50 CSVFile=SpectrumKona_CC.csv
-New "Spectrum.Zoe_3ph_CC" NumHarm=50 CSVFile=SpectrumZoe_3ph_CC.csv
+New monitor.M1 Reactor.R1 Terminal=2
 
-New "Spectrum.Van_CV" NumHarm=50 CSVFile=SpectrumVan_CV.csv
-New "Spectrum.Leaf_CV" NumHarm=50 CSVFile=SpectrumLeaf_CV.csv
-New "Spectrum.BMW_1ph_CV" NumHarm=50 CSVFile=SpectrumBMW_1ph_CV.csv
-New "Spectrum.Zoe_1ph_CV" NumHarm=50 CSVFile=SpectrumZoe_1ph_CV.csv
-New "Spectrum.Kona_CV" NumHarm=50 CSVFile=SpectrumKona_CV.csv
-!New "Spectrum.Zoe_3ph_CV" NumHarm=50 CSVFile=SpectrumZoe_3ph_CV.csv
-
-New "Spectrum.leaf_6A" NumHarm=50 CSVFile=Spectrumleaf_6A.csv
-New "Spectrum.leaf_12A" NumHarm=50 CSVFile=Spectrumleaf_12A.csv
-New "Spectrum.leaf_18A" NumHarm=50 CSVFile=Spectrumleaf_18A.csv
-New "Spectrum.leaf_24A" NumHarm=50 CSVFile=Spectrumleaf_24A.csv
-
-New "Spectrum.kona_6A" NumHarm=50 CSVFile=Spectrumkona_6A.csv
-New "Spectrum.kona_12A" NumHarm=50 CSVFile=Spectrumkona_12A.csv
-New "Spectrum.kona_18A" NumHarm=50 CSVFile=Spectrumkona_18A.csv
-New "Spectrum.kona_24A" NumHarm=50 CSVFile=Spectrumkona_24A.csv
-
-New "Spectrum.van_6A" NumHarm=50 CSVFile=Spectrumvan_6A.csv
-New "Spectrum.van_12A" NumHarm=50 CSVFile=Spectrumvan_12A.csv
-New "Spectrum.van_18A" NumHarm=50 CSVFile=Spectrumvan_18A.csv
-New "Spectrum.van_24A" NumHarm=50 CSVFile=Spectrumvan_24A.csv
-
-New "Spectrum.bmw_1ph_6A" NumHarm=50 CSVFile=Spectrumbmw_1ph_6A.csv
-New "Spectrum.bmw_1ph_12A" NumHarm=50 CSVFile=Spectrumbmw_1ph_12A.csv
-New "Spectrum.bmw_1ph_18A" NumHarm=50 CSVFile=Spectrumbmw_1ph_18A.csv
-New "Spectrum.bmw_1ph_24A" NumHarm=50 CSVFile=Spectrumbmw_1ph_24A.csv
-
-New "Spectrum.zoe_1ph_6A" NumHarm=50 CSVFile=Spectrumzoe_1ph_6A.csv
-New "Spectrum.zoe_1ph_12A" NumHarm=50 CSVFile=Spectrumzoe_1ph_12A.csv
-New "Spectrum.zoe_1ph_18A" NumHarm=50 CSVFile=Spectrumzoe_1ph_18A.csv
-New "Spectrum.zoe_1ph_24A" NumHarm=50 CSVFile=Spectrumzoe_1ph_24A.csv
-
-!Redirect Loads_S.txt
-
-!New monitor.M1 Reactor.R1 Terminal=2
-!New monitor.M1 Transformer.TR1 Terminal=2
-
-Set voltagebases=[11 .415]
+Set voltagebases=[.415]
 Calcvoltagebases
 LatLongCoords XY_Position.csv
+
+Solve
+export voltages
+export currents
+export powers
+
+Solve Mode=Faultstudy
+export seqz
+
+Solve Mode=harmonics NeglectLoadY=Yes
+export monitors m1

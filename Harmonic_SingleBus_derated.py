@@ -26,7 +26,7 @@ DSSLines=DSSCircuit.Lines;
 dssObj.Start(0)
 dssObj.AllowForms=False
 cm='de'
-phh='3ph'
+phh='1ph'
 
 if (cm=='CV' or cm=='CC') and phh=='1ph':
     rated_cc=pd.read_excel('rated_'+str(cm)+'_stats.xlsx', sheet_name=None)
@@ -53,7 +53,7 @@ if cm=='de' and phh=='1ph':
     del rated_cc['zoe_3ph_12A']
     del rated_cc['zoe_3ph_18A']
     del rated_cc['zoe_3ph_24A']
-    EV_power=pd.Series(index=rated_cc.keys(),data=[1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52,1.38,2.76,4.14,5.52])
+    EV_power=pd.Series(index=rated_cc.keys(),data=[1.32,2.64,3.96,5.28,1.32,2.64,3.96,5.28,1.35,2.7,4.05,5.4,1.35,2.7,4.05,5.4,1.35,2.7,4.05,5.4])
  
 if cm=='de' and phh=='3ph':
     rcN={}
@@ -86,22 +86,24 @@ Ch_ratios=pd.DataFrame()
 Pass=pd.DataFrame()
 VoltageMin={}
 VoltageSrc={}
-net_type=['rural','urban']
-RSCs=[33,66]
+RSCs=[15,33,66]
 ####---- Create Loads
 p=75
 ll={}
 if phh=='1ph':
-    cars=['bmw_1ph','kona','leaf','van','zoe_1ph']
+    cars=['van','leaf','bmw_1ph','zoe_1ph','kona']
     ratings=[6,12,18,24]
-
+    ratings=[12]
 if phh =='3ph':
     cars=['bmw_3ph','zoe_3ph']
 
-ne='rural'
 f=33
 seqz={}
 faults={}
+Pass={}
+f_Rsc=pd.Series(dtype=float,index=RSCs,data=[1.87,0.78,0.327]) 
+THD=pd.DataFrame(index=RSCs,columns=cars)
+Vsummary=pd.DataFrame(index=cars,columns=RSCs)
 for i in list(cars):
     if phh =='3ph':
         ratings={}
@@ -110,34 +112,29 @@ for i in list(cars):
     ####---- Create Spectrum CSVs
     cc=0
     #i =list(rated_cc.keys())[3]
-    vfig,vax=plt.subplots(figsize=(5.5, 3.5))
+    vfig,vax=plt.subplots(figsize=(7, 3))
     plt.grid(linewidth=0.2)
-    # vax.text(.4,.9,str(i),
-    # horizontalalignment='left',
-    # transform=vax.transAxes)
+    vax.text(.4,.9,str(i),
+    horizontalalignment='left',
+    transform=vax.transAxes)
     #cfig,cax=plt.subplots()
     #vax.set_title(i+' Voltage Harmonics')
     # cax.set_title(i+' Current Harmonics')
     vax.set_xlabel('h')
     vax.set_ylabel('V'r'$_h$(% of V'r'$_{fund}$'')')
     vax.set_xlim(1,29)
-    pq=[-.6,-0.2,0.2,0.6]
+    pq=[-0.5,0,0.5]
     seqz[i]={}
     faults[i]={}
     if phh=='3ph':
         ratings=ratings[i]
-    Vsummary=pd.DataFrame(index=ratings,columns=cars)
-    htch=pd.Series(index=ratings,data=['','////','XXXX','\\\\'])
-    coll=pd.Series(index=ratings, data=['w','#eb3636','#90ee90','#add8e6'])
-    for r in ratings:  
-        print(ne)
-        B=5##--Number of Buses
-        if ne=='urban':
-            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.78,0.327])   ##--- FOr Urban where WPD ZMax is much higher than corresponding RSC
-        
-        if ne=='rural':
-            f_Rsc=pd.Series(dtype=float,index=RSCs,data=[0.66,0.209])  
-
+    htch=pd.Series(index=RSCs,data=['','////','XXXX'])#,'\\\\'])
+    coll=pd.Series(index=RSCs, data=['w','#eb3636','#90ee90'])#,'#add8e6'])
+    for f in RSCs:
+        if i==cars[0]:
+            Pass[f]=pd.DataFrame()   
+        r=12
+        B=11##--Number of Buses
         g55lims=pd.read_csv('g55limits.csv')
         
         dssObj.ClearAll() 
@@ -151,7 +148,7 @@ for i in list(cars):
             cp=1
             for k in range(1,B):
                 for q in range(1,4):
-                    dssText.Command = "New Load.LOAD"+str(cp)+" Phases=1 Status=1 Bus1="+str(k+1)+"."+str(q)+" kV=0.230 kW="+str(EV_power[i+"_"+str(r)+"A"])+" PF=1 spectrum="+str(i+"_"+str(r)+"A")
+                    dssText.Command = "New Load.LOAD"+str(cp)+" Model=5 Phases=1 Status=1 Bus1="+str(k+1)+"."+str(q)+" kV=0.230 kW="+str(EV_power[i+"_"+str(r)+"A"])+" PF=1 spectrum="+str(i+"_"+str(r)+"A")
                     cp=cp+1
         bmw_factor=B
         if i[:3]=='BMW':
@@ -164,17 +161,9 @@ for i in list(cars):
                 if oo>4:
                     oo=2
             cp=cp+1
-        if ne=='urban':
-            dssText.Command ="Edit Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.415] kVAs=[500 500] XHL=0.01 ppm=0 tap=1.000"
-            dssText.Command ="Edit Reactor.R1 Bus1=1 Bus2=2 R=0.0212 X=0.0217 Phases=3 LCurve=L_Freq RCurve=R_Freq"
-            DSSTrans.First
-            DSSTrans.Wdg=1
-            DSSTrans.R=0.01
-            DSSTrans.Wdg=2
-            DSSTrans.R=0.01
         
         #dssText.Command="New monitor.M1 Reactor.R1 Terminal=2"
-        dssText.Command="New monitor.M1 Line.LINE3 Terminal=2"
+        dssText.Command="New monitor.M1 Line.LINE"+str(B-2)+" Terminal=2"
         dssText.Command="Solve"
     
         bvs = list(DSSCircuit.AllBusVMag)
@@ -186,7 +175,7 @@ for i in list(cars):
         VoltageMin[i+'_'+str(r)+'A']=VoltArray[-1:].mean()
         VoltageSrc[i+'_'+str(r)+'A']=VoltArray[1].mean()
         
-        Vsummary[i][r]=round(VoltageMin[i+'_'+str(r)+'A'],1)
+        Vsummary[f][i]=round(VoltageMin[i+'_'+str(r)+'A'],1)
             
         dssText.Command="Solve Mode=harmonics NeglectLoadY=Yes"
         dssText.Command="export monitors m1"
@@ -194,29 +183,30 @@ for i in list(cars):
     
         Vh_ratios['h']=res_Reactor[' Harmonic']
         Vh_ratios['Lims']=g55lims['L']
-        Vh_ratios['V'+str(i)+str(p)]=res_Reactor[' V1']
-        Vh_ratios['V_ratio'+str(i)+str(p)]=res_Reactor[' V1']/res_Reactor[' V1'][0]*100
+        Vh_ratios['V']=res_Reactor[' V1']
+        Vh_ratios['V_ratio']=res_Reactor[' V1']/res_Reactor[' V1'][0]*100
     
         
         Ch_ratios['h']=res_Reactor[' Harmonic']
         Ch_ratios['C_ratio']=res_Reactor[' I1']/res_Reactor[' I1'][0]*100
         
-        Pass['h']= res_Reactor[' Harmonic'][1:]
-        Pass['pass'+str(i)+str(p)]=Vh_ratios['V_ratio'+str(i)+str(p)][1:]<Vh_ratios['Lims'][1:]
+        Pass[f]['h']= res_Reactor[' Harmonic'][1:]
+        Pass[f]['pass'+str(i)+str(p)]=Vh_ratios['V_ratio'][1:]<Vh_ratios['Lims'][1:]
+        THD[i][f]=sum(Vh_ratios['V_ratio'][1:]**2)**0.5 
             
         x=Vh_ratios['h'][1:]
-        y=Vh_ratios['V_ratio'+str(i)+str(p)][1:]
+        y=Vh_ratios['V_ratio'][1:]
         lim=Vh_ratios['Lims'][1:]
-        vax.bar(x+pq[cc],y, width=0.4,label=str(r)+' A',edgecolor='black',hatch=htch[r],color=coll[r])   ###--- Plotting the Voltage harmonics
+        vax.bar(x+pq[cc],y, width=0.4,label='RSC='+str(f),edgecolor='black',hatch=htch[f],color=coll[f])   ###--- Plotting the Voltage harmonics
         vax.set_xticks(np.arange(1, 50, 2))
         
-        vax.set_ylim(0,1)
+        vax.set_ylim(0,2)
         for n in x.index:  ###--- Plotting the G5 Limit
             if n<x.index[-1]:
                 vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange')
             if n==x.index[-1] and r==24:
                 vax.plot([x[n]-0.5,x[n]+0.5],[lim[n],lim[n]],color='orange',label='G5/5 Limit')
-        vax.legend(framealpha=1,bbox_to_anchor=(0, 1.1), loc='upper left', ncol=2)
+        vax.legend()#framealpha=1,bbox_to_anchor=(0, 1.1), loc='upper left', ncol=2)
         
         # x=Ch_ratios['h'][1:]
         # y=Ch_ratios['C_ratio'][1:]
@@ -252,5 +242,19 @@ for i in list(cars):
         iline=DSSLines.Next
     iload=DSSLoads.First
     while iload>0:
-        print(DSSLoads.Name, 'Bus=',DSSCktElement.BusNames, 'kW=',DSSLoads.kW)
+        print(DSSLoads.Name, 'Bus=',DSSCktElement.BusNames, 'kW=',DSSLoads.kW, 'spectrum=', DSSLoads.Spectrum)
         iload=DSSLoads.Next
+        
+t=THD.transpose()
+fails={}
+evs={}
+evs=pd.DataFrame(index=list(Pass.keys()),columns=Pass[15].columns[1:])
+for i in Pass:
+    idx=Pass[i].iloc[:,1:].sum(axis=1)<5
+    fails[i]=Pass[i].loc[idx].transpose()
+    fails[i].columns=fails[i].loc['h',:]
+    for h in fails[i].index[1:]:
+        evs[h][i]=fails[i].loc[h][fails[i].loc[h]==False].index.values
+        
+evs=evs.transpose()
+
