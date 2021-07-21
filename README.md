@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [Python 3.7]
-- See the requirements.txt file
+- OpenDSS (available from SourceForge)
 
 ## Overall Project Description
 
