@@ -18,5 +18,5 @@ There are scripts to carry out single snapshot for individual and mixtures of EV
 - Harmonic_DeratedComparison - Comparing harmonics from different derated capacities of same type
 - Harmonic_DeratedComparisonDiversity - Comparing harmonics from different derated capacities of different types
 - Harmonic_SingleBus - Comparing harmonics for each EV type for CC and CV
-- Harmonic_SingleBus - Comparing harmonics for each EV type for derated capacity
+- Harmonic_SingleBus_derated - Comparing harmonics for each EV type for derated capacity
 

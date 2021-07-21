@@ -1,3 +1,0 @@
-New Load.LOAD0 Phases=1 Bus1=5.1 kV=0.230 kW=7.2 PF=1 spectrum=Kona_CC
-New Load.LOAD2 Phases=1 Bus1=3.1 kV=0.230 kW=7.2 PF=1 spectrum=BMW_1ph_CC
-New Load.LOAD3 Phases=1 Bus1=3.3 kV=0.230 kW=6.6 PF=1 spectrum=Leaf_CC
